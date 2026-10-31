@@ -45,12 +45,21 @@ alter table public.recordings enable row level security;
 alter table public.corrections enable row level security;
 alter table public.usage_ledger enable row level security;
 
+-- Data API access is explicit (Supabase stopped default grants for new tables on 2026-10-30).
+-- Only the server's service_role may touch these tables; anon/authenticated get nothing, even on
+-- older projects that still hand out default grants.
+revoke all on public.signs, public.recordings, public.corrections, public.usage_ledger from anon, authenticated;
+grant select, insert on public.usage_ledger to service_role;
+grant select, insert, update on public.signs to service_role;
+grant select, insert, delete on public.recordings to service_role;
+grant select, insert on public.corrections to service_role;
+
 -- Reserve spend atomically: returns the new total, or null when it would pass the cap.
 -- The advisory lock serialises concurrent calls so two requests can't both slip under the cap.
 create function public.reserve_spend(p_endpoint text, p_cost numeric, p_cap numeric, p_session text default null)
 returns numeric
 language plpgsql
-security definer
+security invoker -- runs with the caller's grants (service_role), no privilege escalation
 set search_path = ''
 as $$
 declare
