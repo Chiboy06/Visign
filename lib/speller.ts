@@ -8,13 +8,15 @@ export type SpellEvent = { letter?: Guess[]; word?: Guess[][] };
 
 /**
  * Turns per-frame classifier guesses into committed letters and finished words.
- * shortcut: a double letter (the LL in HELLO) needs the hand to change or drop between the two;
- * Muse Spark's decode usually restores it from context. Upgrade with motion-bounce detection.
+ * The same letter is never committed twice in a row while the hand stays up: classifier flicker
+ * (O, unsure, O) used to produce "OOOOO". shortcut: so a double letter (the LL in HELLO) needs the
+ * hand lowered between the two; Muse Spark's decode usually restores it from context.
  */
 export function createSpeller() {
   let candidate: string | null = null;
   let since = 0;
   let committed = false;
+  let lastCommitted: string | null = null;
   let lastHand = 0;
   let word: Guess[][] = [];
 
@@ -22,6 +24,7 @@ export function createSpeller() {
     if (!top || top.length === 0) {
       candidate = null;
       committed = false;
+      lastCommitted = null;
       if (word.length > 0 && t - lastHand >= GAP_MS) {
         const done = word;
         word = [];
@@ -37,8 +40,9 @@ export function createSpeller() {
       committed = false;
       return {};
     }
-    if (!committed && t - since >= HOLD_MS) {
+    if (!committed && t - since >= HOLD_MS && best.letter !== lastCommitted) {
       committed = true;
+      lastCommitted = best.letter;
       word.push(top);
       return { letter: top };
     }

@@ -22,6 +22,7 @@ export default function CallPage() {
   const [role, setRole] = useState<Role>("hearing");
   const [roomCode, setRoomCode] = useState("");
   const [joined, setJoined] = useState(false);
+  const [connecting, setConnecting] = useState(false);
   const [status, setStatus] = useState("");
   const [messages, setMessages] = useState<Msg[]>([]);
   const [letters, setLetters] = useState<Guess[][]>([]);
@@ -72,18 +73,24 @@ export default function CallPage() {
   }
 
   async function join() {
+    // One connection per tab: a second click while connecting used to open a duplicate (6x messages).
+    if (connecting || room.current) return;
     if (!/^[a-z0-9-]{4,40}$/.test(roomCode)) return setStatus("Room code: 4-40 lowercase letters, digits or dashes.");
+    setConnecting(true);
     setStatus("Connecting…");
     recent.current = [];
+    let r: Room | null = null;
     try {
       const res = await fetch("/api/token", { method: "POST", headers, body: JSON.stringify({ room: roomCode, role }) });
       const { token, url, error } = await res.json();
       if (!res.ok || !token || !url) throw new Error(error ?? "LiveKit is not configured on the server");
-      const r = new Room({ adaptiveStream: true, dynacast: true });
+      r = new Room({ adaptiveStream: true, dynacast: true });
       r.on(RoomEvent.TrackSubscribed, (track) => {
         if (track.kind === Track.Kind.Video && remote.current) track.attach(remote.current);
       });
-      r.on(RoomEvent.DataReceived, (payload) => {
+      r.on(RoomEvent.DataReceived, (payload, participant) => {
+        // Only the other role talks to us; another tab of ours must not echo our own words back.
+        if (participant?.identity.startsWith(`${role}-`)) return;
         try {
           addMessage({ ...JSON.parse(new TextDecoder().decode(payload)), from: "them" });
         } catch {} // ignore malformed messages from the other side
@@ -91,15 +98,25 @@ export default function CallPage() {
       r.on(RoomEvent.ParticipantConnected, () => setStatus("The other person joined."));
       r.on(RoomEvent.ParticipantDisconnected, () => setStatus("The other person left."));
       await r.connect(url, token);
-      await r.localParticipant.setCameraEnabled(true);
-      const cam = r.localParticipant.getTrackPublication(Track.Source.Camera)?.videoTrack;
-      if (cam && local.current) cam.attach(local.current);
       room.current = r;
+      let note = "";
+      try {
+        await r.localParticipant.setCameraEnabled(true);
+        const cam = r.localParticipant.getTrackPublication(Track.Source.Camera)?.videoTrack;
+        if (cam && local.current) cam.attach(local.current);
+      } catch {
+        // Often another tab holds the camera. Stay in the call: reading and typing still work.
+        note = " Camera unavailable: close other tabs using it and rejoin to show video.";
+      }
       window.history.replaceState(null, "", `/call?room=${roomCode}&role=${role}`);
       setJoined(true);
-      setStatus(r.remoteParticipants.size ? "Connected." : "Waiting for the other person…");
+      setStatus((r.remoteParticipants.size ? "Connected." : "Waiting for the other person…") + note);
     } catch (e) {
+      await r?.disconnect(); // never leave a half-open connection behind
+      room.current = null;
       setStatus(`Could not join: ${(e as Error).message}`);
+    } finally {
+      setConnecting(false);
     }
   }
 
@@ -254,8 +271,8 @@ export default function CallPage() {
             value={roomCode} onChange={(e) => setRoomCode(e.target.value.toLowerCase())} autoComplete="off" spellCheck={false}
           />
 
-          <button className="mt-6 w-full rounded-full bg-ink py-4 font-display text-lg font-bold text-cloth hover:bg-dye" onClick={join}>
-            Join call
+          <button className="mt-6 w-full rounded-full bg-ink py-4 font-display text-lg font-bold text-cloth hover:bg-dye disabled:opacity-60" onClick={join} disabled={connecting}>
+            {connecting ? "Joining…" : "Join call"}
           </button>
 
           {shareLink && (
@@ -273,6 +290,11 @@ export default function CallPage() {
             </div>
           )}
           <p className="mt-4 min-h-6 text-sm" role="status">{status}</p>
+          <p className="mt-6 text-sm leading-relaxed text-ink/70">
+            By joining, you agree that your speech clips are sent to Meta&apos;s AI to be transcribed, and spelled words
+            to Meta&apos;s AI to be decoded. Video travels between the two of you through LiveKit and is never recorded.
+            Hand tracking runs on your device.
+          </p>
         </div>
       </main>
     );
