@@ -5,6 +5,8 @@ import { spark } from "@/lib/meta";
 const INSTRUCTIONS = `You decode noisy fingerspelling into words during a live conversation.
 For each position you get the classifier's top guesses with confidence. Similar handshapes are often confused (A/E/S/T/M/N, U/V, K/P).
 Use the recent conversation to pick the most likely intended words. Prefer real words that fit the context.
+Only fix what the guesses support: swap a letter for one of its listed alternatives, or restore one doubled letter (HELO -> HELLO).
+If no real word fits within those fixes, output the top-guess letters unchanged. Never invent a word the letters don't support.
 Output ONLY the decoded text, nothing else.`;
 
 type Guess = { letter: string; p: number };

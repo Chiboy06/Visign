@@ -156,3 +156,26 @@ test("resample keeps duration and shape", () => {
   assert.ok(Math.abs(out[40] - Math.sin((2 * Math.PI * 100 * 40) / 16000)) < 1e-3);
   assert.equal(resample(tone, 16000, 16000), tone);
 });
+
+test("speller: classifier flicker never repeats a letter (the OOOOO bug)", () => {
+  const push = createSpeller();
+  const g = (letter: string, p = 0.9) => [{ letter, p }];
+  let t = 0, committed = 0;
+  // O held, with an unsure frame and a brief wrong guess in between, five times over
+  for (let k = 0; k < 5; k++) {
+    for (const guess of [g("O"), g("O"), g("Q", 0.3), g("Q"), g("O"), g("O")]) {
+      if (push((t += HOLD_MS / 2), guess).letter) committed++;
+    }
+  }
+  assert.equal(committed, 1);
+});
+
+test("speller: lowering the hand allows the same letter again (double letters)", () => {
+  const push = createSpeller();
+  const g = [{ letter: "L", p: 0.9 }];
+  push(0, g);
+  assert.equal(push(HOLD_MS, g).letter?.[0].letter, "L");
+  push(HOLD_MS + 50, null); // hand down briefly, shorter than the word gap
+  push(HOLD_MS + 100, g);
+  assert.equal(push(2 * HOLD_MS + 100, g).letter?.[0].letter, "L");
+});
