@@ -49,16 +49,6 @@ export function drawHand(ctx: CanvasRenderingContext2D, points: Point[], color =
   });
 }
 
-/** Rescales points into a square box so a hand fills a thumbnail regardless of where it was in the frame. */
-export function fitToBox(points: Point[], aspect: number, pad = 0.1): Point[] {
-  const xs = points.map((p) => p.x * aspect);
-  const ys = points.map((p) => p.y);
-  const minX = Math.min(...xs), minY = Math.min(...ys);
-  const size = Math.max(Math.max(...xs) - minX, Math.max(...ys) - minY) || 1;
-  const scale = (1 - 2 * pad) / size;
-  return points.map((p, i) => ({ x: pad + (xs[i] - minX) * scale, y: pad + (ys[i] - minY) * scale, z: p.z }));
-}
-
 export function downloadJson(name: string, data: unknown) {
   const url = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: "application/json" }));
   const a = Object.assign(document.createElement("a"), { href: url, download: name });

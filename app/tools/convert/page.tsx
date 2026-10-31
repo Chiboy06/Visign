@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ASLNOW_ASPECT, countByLabel, labelFromPath, sourceKey, toPoints, type Lang, type Sample } from "@/lib/dataset";
-import { downloadJson, drawHand, fitToBox, handLandmarker } from "@/lib/hands";
+import { ASLNOW_ASPECT, countByLabel, fitToBox, labelFromPath, sourceKey, toPoints, type Lang, type Sample } from "@/lib/dataset";
+import { downloadJson, drawHand, handLandmarker } from "@/lib/hands";
 
 type Row = Sample & { id: number; file: string; preview?: string; excluded?: boolean };
 
