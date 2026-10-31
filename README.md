@@ -4,7 +4,7 @@
 
 Built for the [Meta Global AI Developer Hackathon](https://cerebralvalley.ai/e/meta-ai-developer-hackathon) (Indie track). It supports **Nigerian Sign Language (NSL)** and **American Sign Language (ASL)**.
 
-> Status: in active development (Day 1 of 3). The API, the data tools and the datasets are done. The live call, the classifier and the avatar are next. See [PLAN.md](PLAN.md).
+> Status: in active development. The live call (`/call`), letter classifier, 2D avatar, API and data tools are built. Next: end-to-end testing on real devices, recorded word signs, and deployment. See [PLAN.md](PLAN.md).
 
 ---
 
@@ -104,9 +104,19 @@ Open http://localhost:3000.
 | `npm run build` / `npm start` | Production build / serve |
 | `npm test` | Unit tests (Node's built-in test runner) |
 | `npm run lint` · `npm run typecheck` | ESLint · TypeScript |
+| `npm run model` | Rebuilds `public/model/letters.json` from `data/raw/asl-now` and `data/landmarks/*.json`, and prints held-out accuracy |
 | `npm run latency -- scripts/fixtures/hand-crop.jpg` | Times Meta API calls from your machine (about $0.02) |
 
 ---
+
+## Using a call
+
+1. Open `/call`, choose **Hearing** or **Deaf**, and join. Send the other person the share link (it opens with the other role).
+2. **Hearing:** hold **Hold to speak** (or Space), talk, and release. Muse Voice Transcribe turns it into text, Muse Spark shortens it to gloss, and the deaf side sees captions plus the avatar fingerspelling it.
+3. **Deaf:** sign letters to your camera and hold each one for about half a second. Lower your hand to finish a word. Muse Spark decodes the letters using the conversation, and the hearing side reads the result.
+4. Either side can **type** instead. This is the fallback if the mic, camera or network misbehaves.
+
+**Letter classifier:** k-nearest-neighbours on hand-shape features that ignore position, size and which hand is used. Built from 2,122 ASLNow samples: **96.6% top-1 and 99.0% top-3 on held-out samples**. This is optimistic, because the same signers are in training and test; expect lower for new signers until NSL and team recordings are added. The weakest letters are A (vs S) and Z.
 
 ## Data tools
 
