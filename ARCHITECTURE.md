@@ -116,7 +116,7 @@ You're right that it's needed. Without accounts it still does four jobs:
 - **Postgres** is the industry-standard database. Atomic updates keep the budget ledger exact, and row-level security is available when we add accounts. **Supabase Auth** is ready for when we need it.
 - **Storage** holds the big files (motion JSON, `.vrm` models) in the same project.
 - **The 1-week inactivity pause** on the free tier can't happen before judging ends. The last activity is around Nov 4, so the earliest pause is around Nov 11, after judging ends on Nov 8. No keep-alive job needed. Upgrade to Pro ($25/month) if Visign goes live for real users.
-- **How the server talks to it:** the API uses `@supabase/supabase-js` with the **service-role key as a Vercel environment secret**. The browser never talks to the database directly in v1, so all rules stay on the server.
+- **How the server talks to it:** the API uses `@supabase/supabase-js` with a **Supabase secret key (`sb_secret_…`, which maps to `service_role`) as a Vercel environment secret**. The browser never talks to the database directly in v1, so all rules stay on the server.
 - Schema changes go through **Supabase CLI migrations** (versioned SQL in git).
 - **[Day 1]:** put the Vercel functions region and the Supabase region in the same place (EU, which is closest to Lagos among the usual options) and measure the time between them.
 
@@ -268,7 +268,7 @@ Message types inside the call are defined once in `shared/messages.ts`.
 ## 10. Audit checklists
 
 **Security**
-- [ ] The Meta key, LiveKit secret and Supabase service-role key exist only as Vercel environment secrets (server-only, never `NEXT_PUBLIC_`). They're never in git, the client or logs. `.env` is in `.gitignore`.
+- [ ] The Meta key, LiveKit secret and Supabase secret key exist only as Vercel environment secrets (server-only, never `NEXT_PUBLIC_`). They're never in git, the client or logs. `.env` is in `.gitignore`.
 - [ ] Every endpoint validates its input. Use prepared SQL statements only (no string-built SQL, so no SQL injection).
 - [ ] CORS allows only our domain. Rate limits apply per IP and per session.
 - [ ] LiveKit tokens are short-lived (e.g. 1 hour) and scoped to one room.

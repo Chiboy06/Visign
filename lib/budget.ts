@@ -20,7 +20,7 @@ export function transcribeCost(wavBytes: number, sampleRate: number) {
 
 let client: SupabaseClient | null = null;
 const db = () =>
-  (client ??= createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  (client ??= createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!, {
     auth: { persistSession: false },
   }));
 
