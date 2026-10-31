@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 // Hard cap is half the $150 credits; SAM stops earlier so text keeps working ("cheap mode").
 export const HARD_CAP_USD = 75;
@@ -18,10 +18,11 @@ export function transcribeCost(wavBytes: number, sampleRate: number) {
   return Math.ceil(wavBytes / (sampleRate * 2)) * COST.transcribePerSecond;
 }
 
+let client: SupabaseClient | null = null;
 const db = () =>
-  createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  (client ??= createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
     auth: { persistSession: false },
-  });
+  }));
 
 /** Returns true when the spend was recorded under the cap. Fails closed if the DB is unreachable. */
 export async function reserve(endpoint: string, cost: number, sessionId?: string) {
