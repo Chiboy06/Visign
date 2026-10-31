@@ -215,7 +215,8 @@ export default function CallPage() {
     else send({ kind: "sign", text });
   }
 
-  const shareLink = typeof location !== "undefined" ? `${location.origin}/call?room=${roomCode}&role=${role === "hearing" ? "deaf" : "hearing"}` : "";
+  // roomCode is only set after mount, so the server and the first client render both show no link (no hydration mismatch).
+  const shareLink = roomCode ? `${location.origin}/call?room=${roomCode}&role=${role === "hearing" ? "deaf" : "hearing"}` : "";
 
   if (!joined) {
     return (
@@ -237,7 +238,7 @@ export default function CallPage() {
           <input className="mt-1 rounded border px-2 py-1 font-mono" value={roomCode} onChange={(e) => setRoomCode(e.target.value.toLowerCase())} />
         </label>
         <button className="mt-4 w-full rounded bg-black py-3 text-white" onClick={join}>Join call</button>
-        <p className="mt-3 break-all text-xs text-neutral-600">Send the other person: {shareLink}</p>
+        {shareLink && <p className="mt-3 break-all text-xs text-neutral-600">Send the other person: {shareLink}</p>}
         <p className="mt-3 text-sm" role="status">{status}</p>
       </main>
     );
