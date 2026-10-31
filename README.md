@@ -84,7 +84,7 @@ Fill in `.env`. **Never commit it**; it's gitignored.
 | Variable | Where to get it | Needed for |
 |---|---|---|
 | `MODEL_API_KEY` | [dev.meta.ai](https://dev.meta.ai/) → API keys | gloss, decode, segment, transcribe |
-| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project settings → API | the budget ledger (every paid call) |
+| `SUPABASE_URL`, `SUPABASE_SECRET_KEY` | Supabase → Project Settings → API Keys: the project URL and a **secret key** (`sb_secret_…`), not the legacy `service_role` JWT | the budget ledger (every paid call) |
 | `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` | LiveKit Cloud → Project settings → Keys | video calls |
 
 All of these are **server-only**. Never prefix them with `NEXT_PUBLIC_`.
