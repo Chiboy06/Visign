@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { ASLNOW_ASPECT, countByLabel, fitToBox, labelFromPath, sourceKey, toPoints, type Lang, type Sample } from "@/lib/dataset";
 import { downloadJson, drawHand, handLandmarker } from "@/lib/hands";
@@ -75,8 +76,9 @@ export default function ConvertPage() {
 
   return (
     <main className="mx-auto max-w-6xl p-4 sm:p-8">
-      <h1 className="text-2xl font-semibold">Dataset converter</h1>
-      <p className="mt-1 text-sm text-neutral-600">
+      <Link href="/" className="font-display text-lg font-bold text-vat">Visign</Link>
+      <h1 className="mt-2 font-display text-3xl font-extrabold tracking-tight">Dataset converter</h1>
+      <p className="mt-1 text-sm text-ink/70">
         Turns sign images (NSL dataset) or ASLNow JSON into hand landmarks. Labels come from the file prefix
         (<code>a_frame_….jpg</code>) or the folder name (<code>B/….json</code>). Everything runs in this browser.
       </p>
@@ -106,7 +108,7 @@ export default function ConvertPage() {
           />
         </label>
         <button
-          className="rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-40"
+          className="rounded bg-ink px-4 py-2 text-sm text-white disabled:opacity-40"
           disabled={busy || kept.length === 0} onClick={exportJson}
         >
           Download landmarks.json ({kept.length})
@@ -118,7 +120,7 @@ export default function ConvertPage() {
       {labels.length > 0 && (
         <section className="mt-6">
           <h2 className="font-medium">Samples kept per label</h2>
-          <p className="mt-1 text-xs text-neutral-600">
+          <p className="mt-1 text-xs text-ink/70">
             Click a card to exclude a wrong or unclear sample (e.g. a &quot;W&quot; showing two fingers).
           </p>
           {labels.map((label) => (

@@ -80,4 +80,5 @@ writeFileSync("public/model/letters.json", JSON.stringify({
   samples: samples.map((s) => ({ l: s.label, lang: s.lang, a: round(s.aspect), p: s.points.flatMap((q) => [q.x, q.y, q.z].map(round)) })),
   poses,
 }));
+writeFileSync("public/model/poses.json", JSON.stringify(poses)); // small file for the home page and avatar
 console.log(`wrote public/model/letters.json (${samples.length} samples, ${Object.keys(poses).length} poses)`);
