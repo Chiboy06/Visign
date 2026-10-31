@@ -2,7 +2,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { capFor, COST, HARD_CAP_USD, SAM_CAP_USD, transcribeCost } from "./budget.ts";
+import { classify, features } from "./classify.ts";
 import { countByLabel, labelFromPath, sourceKey, toPoints } from "./dataset.ts";
+import { createSpeller, GAP_MS, HOLD_MS } from "./speller.ts";
+import { encodeWav, resample } from "./wavEncode.ts";
 import { localGloss, parseGloss } from "./gloss.ts";
 import { wavInfo } from "./wav.ts";
 
@@ -82,4 +85,74 @@ test("sourceKey groups frames of the same NSL video", () => {
 
 test("countByLabel", () => {
   assert.deepEqual(countByLabel([{ label: "A" }, { label: "B" }, { label: "A" }]), { A: 2, B: 1 });
+});
+
+// A synthetic hand: wrist at origin, five straight fingers; `curl` folds finger tips toward the palm.
+function hand(curl: number[], angle = 0, scale = 0.2, dx = 0.5, mirror = false) {
+  const pts = [{ x: 0, y: 0, z: 0 }];
+  for (let f = 0; f < 5; f++) {
+    const base = (f - 2) * 0.25;
+    for (let j = 1; j <= 4; j++) {
+      const reach = j * (1 - curl[f] * (j / 4));
+      pts.push({ x: Math.sin(base) * reach, y: -Math.cos(base) * reach, z: 0 });
+    }
+  }
+  return pts.map((p) => {
+    const x = p.x * Math.cos(angle) - p.y * Math.sin(angle), y = p.x * Math.sin(angle) + p.y * Math.cos(angle);
+    return { x: dx + (mirror ? -x : x) * scale * 0.25, y: 0.6 + y * scale * 0.25, z: 0 };
+  });
+}
+
+test("features ignore position, size and mirroring", () => {
+  const a = features(hand([0, 1, 1, 1, 1]), 1);
+  const b = features(hand([0, 1, 1, 1, 1], 0, 0.35, 0.3, true), 1);
+  assert.equal(a.length, 212);
+  a.forEach((v, i) => assert.ok(Math.abs(v - b[i]) < 1e-9, `feature ${i}`));
+});
+
+test("features tell an upright hand from a sideways one", () => {
+  const up = features(hand([0, 0, 1, 1, 1]), 1);
+  const side = features(hand([0, 0, 1, 1, 1], Math.PI / 2), 1);
+  assert.ok(Math.abs(up[210] - side[210]) > 1);
+});
+
+test("classify picks the nearest shapes and returns normalised top-3", () => {
+  const model = {
+    labels: ["A", "A", "B", "B", "U", "U"],
+    X: [hand([1, 1, 1, 1, 1]), hand([0.9, 1, 1, 1, 1]), hand([0, 0, 0, 0, 0]), hand([0.1, 0, 0, 0, 0]),
+      hand([1, 0, 0, 1, 1]), hand([1, 0.1, 0, 1, 1])].map((h) => features(h, 1)),
+  };
+  const top = classify(model, features(hand([0.05, 0, 0, 0, 0], 0, 0.3, 0.2), 1), 5);
+  assert.equal(top[0].letter, "B");
+  assert.ok(Math.abs(top.reduce((s, g) => s + g.p, 0) - 1) < 1e-9);
+  assert.equal(classify(model, features(hand([1, 0, 0.05, 1, 1]), 1), 3)[0].letter, "U");
+});
+
+test("speller commits a held letter once and ends the word after a gap", () => {
+  const push = createSpeller();
+  const g = (letter: string, p = 0.9) => [{ letter, p }, { letter: "X", p: 0.1 }];
+  assert.deepEqual(push(0, g("H")), {});
+  assert.equal(push(HOLD_MS, g("H")).letter?.[0].letter, "H");
+  assert.deepEqual(push(HOLD_MS + 100, g("H")), {}); // still held: no repeat
+  push(HOLD_MS + 200, g("I", 0.3)); // unsure: ignored
+  push(HOLD_MS + 300, g("I"));
+  assert.equal(push(2 * HOLD_MS + 300, g("I")).letter?.[0].letter, "I");
+  assert.deepEqual(push(2 * HOLD_MS + 400, null), {});
+  const end = push(2 * HOLD_MS + 300 + GAP_MS, null);
+  assert.deepEqual(end.word?.map((pos) => pos[0].letter), ["H", "I"]);
+  assert.deepEqual(push(9999, null), {}); // nothing pending
+});
+
+test("encodeWav output passes the server's WAV validation", () => {
+  const wav = encodeWav(new Float32Array(16000).map((_, i) => Math.sin(i / 10)), 16000);
+  assert.deepEqual(wavInfo(wav), { sampleRate: 16000, bytes: 44 + 32000 });
+  assert.equal(new DataView(wav).getInt16(44 + 2 * 5, true), Math.trunc(Math.sin(0.5) * 0x7fff));
+});
+
+test("resample keeps duration and shape", () => {
+  const sr = 48000, tone = new Float32Array(sr).map((_, i) => Math.sin((2 * Math.PI * 100 * i) / sr));
+  const out = resample(tone, sr, 16000);
+  assert.equal(out.length, 16000);
+  assert.ok(Math.abs(out[40] - Math.sin((2 * Math.PI * 100 * 40) / 16000)) < 1e-3);
+  assert.equal(resample(tone, 16000, 16000), tone);
 });
