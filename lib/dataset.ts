@@ -15,6 +15,12 @@ export type Sample = {
 
 export type Motion = Omit<Sample, "points"> & { frames: { t: number; points: Point[] }[] };
 
+// MediaPipe hand skeleton: pairs of landmark indices joined by a bone.
+export const BONES = [
+  [0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [5, 9], [9, 10], [10, 11], [11, 12],
+  [9, 13], [13, 14], [14, 15], [15, 16], [13, 17], [17, 18], [18, 19], [19, 20], [0, 17],
+] as const;
+
 export const LETTERS = [..."ABCDEFGHIJKLMNOPQRSTUVWXYZ"];
 export const DIGITS = [..."123456789"];
 export const WORDS = ["HELLO", "HOW", "YOU", "YES", "NO", "THANK-YOU", "WATER", "PLEASE"];

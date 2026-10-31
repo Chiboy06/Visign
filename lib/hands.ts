@@ -1,6 +1,6 @@
 // Browser-only: MediaPipe Hand Landmarker served from our own origin (see scripts/copy-mediapipe.mjs).
 import { FilesetResolver, HandLandmarker } from "@mediapipe/tasks-vision";
-import type { Point } from "./dataset";
+import { BONES, type Point } from "./dataset";
 
 const cache = new Map<string, Promise<HandLandmarker>>();
 
@@ -25,10 +25,6 @@ export function handLandmarker(mode: "IMAGE" | "VIDEO") {
   return cache.get(mode)!;
 }
 
-const BONES = [
-  [0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [5, 9], [9, 10], [10, 11], [11, 12],
-  [9, 13], [13, 14], [14, 15], [15, 16], [13, 17], [17, 18], [18, 19], [19, 20], [0, 17],
-];
 
 /** Draws a hand skeleton; points are normalized to the canvas (x by width, y by height). Fingertips in red. */
 export function drawHand(ctx: CanvasRenderingContext2D, points: Point[], color = "#111") {

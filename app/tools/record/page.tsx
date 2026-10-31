@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { countByLabel, DIGITS, LETTERS, toPoints, WORDS, type Lang, type Motion, type Point, type Sample } from "@/lib/dataset";
 import { downloadJson, drawHand, handLandmarker } from "@/lib/hands";
@@ -111,8 +112,9 @@ export default function RecordPage() {
 
   return (
     <main className="mx-auto max-w-5xl p-4 sm:p-8">
-      <h1 className="text-2xl font-semibold">Sign recorder</h1>
-      <p className="mt-1 text-sm text-neutral-600">
+      <Link href="/" className="font-display text-lg font-bold text-vat">Visign</Link>
+      <h1 className="mt-2 font-display text-3xl font-extrabold tracking-tight">Sign recorder</h1>
+      <p className="mt-1 text-sm text-ink/70">
         Records hand landmarks only, never video. One file trains recognition <em>and</em> drives the avatar.
       </p>
 
@@ -145,12 +147,12 @@ export default function RecordPage() {
           </select>
         </label>
         {!running ? (
-          <button className="rounded bg-black px-4 py-2 text-white disabled:opacity-40" disabled={!consent} onClick={start}>
+          <button className="rounded bg-ink px-4 py-2 text-white disabled:opacity-40" disabled={!consent} onClick={start}>
             Start camera
           </button>
         ) : (
           <>
-            <button className="rounded bg-black px-4 py-2 text-white disabled:opacity-40" disabled={!consent}
+            <button className="rounded bg-ink px-4 py-2 text-white disabled:opacity-40" disabled={!consent}
               onClick={isMotion(label) ? recordMotion : captureStill}>
               {isMotion(label) ? `Record motion (Space)` : `Capture (Space)`}
             </button>
@@ -168,7 +170,7 @@ export default function RecordPage() {
 
       <p className="mt-3 text-sm" role="status" aria-live="polite">{message}</p>
 
-      <div className="relative mt-4 w-full max-w-2xl overflow-hidden rounded bg-neutral-900">
+      <div className="relative mt-4 w-full max-w-2xl overflow-hidden rounded bg-dye">
         <video ref={video} playsInline muted className="block w-full -scale-x-100" />
         <canvas ref={overlay} className="absolute inset-0 h-full w-full -scale-x-100" />
       </div>
@@ -179,7 +181,7 @@ export default function RecordPage() {
           {Object.entries({ ...stillCounts, ...motionCounts }).map(([l]) =>
             `${l}: ${stillCounts[l] ?? 0}${motionCounts[l] ? ` + ${motionCounts[l]} motion` : ""}`).join("   ") || "nothing yet"}
         </p>
-        <p className="mt-1 text-xs text-neutral-600">Aim for about 30 stills per letter per person, with small changes in angle and distance.</p>
+        <p className="mt-1 text-xs text-ink/70">Aim for about 30 stills per letter per person, with small changes in angle and distance.</p>
       </section>
     </main>
   );

@@ -1,26 +1,40 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Adire palette: indigo resist-dyed cloth from Abeokuta. Ochre marks signing and anything live. */
+@theme {
+  --color-dye: #16215c; /* deep indigo, the dye vat */
+  --color-vat: #2b3a8f; /* indigo; spoken messages */
+  --color-cloth: #eef1f8; /* the undyed resist */
+  --color-ink: #0f1640; /* text on cloth */
+  --color-sun: #e8a317; /* ochre; signed messages, live states */
+  --color-skin: #8d5524;
+  --font-display: var(--font-bricolage), system-ui, sans-serif;
+  --font-sans: var(--font-atkinson), system-ui, sans-serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-cloth);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-sun);
+  outline-offset: 2px;
+}
+
+/* Adire "eleko"-style resist dots: the only decoration, used on indigo surfaces. */
+.adire {
+  background-color: var(--color-dye);
+  background-image: radial-gradient(circle at center, rgb(238 241 248 / 0.07) 0 3px, transparent 3.5px),
+    radial-gradient(circle at center, rgb(238 241 248 / 0.05) 0 9px, transparent 9.5px);
+  background-size: 28px 28px, 56px 56px;
+  background-position: 0 0, 14px 14px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
