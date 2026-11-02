@@ -57,6 +57,21 @@ console.log("weakest letters:", Object.entries(perLabel).sort((a, b) => a[1][0] 
   .map(([l, [c, n]]) => `${l} ${pct(c, n)}`).join(", "));
 console.log("top confusions:", Object.entries(confusions).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([k, n]) => `${k} x${n}`).join(", "));
 
+// The honest test: for each recorded signer, train on everyone else and test on them (a "new person").
+const signers = [...new Set(samples.map((s) => s.source).filter((s) => s.startsWith("rec:")))];
+for (const signer of signers) {
+  const out = samples.map((s) => s.source === signer);
+  const rest = { labels: samples.filter((_, i) => !out[i]).map((s) => s.label), X: feats.filter((_, i) => !out[i]) };
+  let hit = 0, n = 0;
+  samples.forEach((s, i) => {
+    if (!out[i]) return;
+    n++;
+    if (classify(rest, feats[i])[0].letter === s.label) hit++;
+  });
+  console.log(`new-person test, ${signer.slice(4)}: ${pct(hit, n)} correct on ${n} samples (model never saw this person)`);
+}
+if (signers.length === 0) console.log("new-person test: record at least one signer with /tools/record to get this number");
+
 // Avatar pose per label: the medoid (the real sample most similar to all others), so poses are genuine hands.
 const poses: Record<string, number[]> = {};
 for (const label of Object.keys(countByLabel(samples))) {
