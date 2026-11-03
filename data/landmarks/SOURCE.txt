@@ -1,0 +1,10 @@
+Training data provenance for this local run
+
+- nsl-photos.json: 483 MediaPipe landmark samples converted from the NSL Alphanumeric Dataset (Adeniyan, Afolayan & Johnson, 2026), Zenodo record https://zenodo.org/records/21672976, CC BY 4.0. 495 photos were downloaded; 12 were skipped because the hand detector found no hand. The language labels and hand shapes are from the source photo filenames/content. Source photos are retained locally under gitignored data/raw/nsl/.
+- asl-baseline.json: 2,122 ASL landmark samples reconstructed from the repository's pre-existing public/model/letters.json so this run retains its ASL baseline. The repository attributes ASLNow! (sid220) under MIT in README.md.
+- Voxel51 ASL-MNIST: source images and FiftyOne annotations are staged locally under gitignored data/raw/asl-mnist/. The script `scripts/train-aslmnist.py` joins each Parquet image by split and filename to `samples.json` ground_truth labels; it does not use the auto-generated Parquet label column. Dataset card: https://huggingface.co/datasets/Voxel51/American-Sign-Language-MNIST. Processing notes: https://voxel51.com/blog/import-kaggle-datasets-into-fiftyone-and-publish-to-hugging-face-hub. Original Kaggle images are CC0/public domain; Voxel51 packaging/annotations are MIT. The image CNN is a separate 24-class static ASL model, not part of the landmark exports.
+
+Landmark model retraining command: npm run model
+Landmark outputs: public/model/letters.json and public/model/poses.json
+ASL-MNIST CNN command: npm run train:asl-mnist
+ASL-MNIST outputs: public/model/asl-mnist.onnx, public/model/asl-mnist.pt, and public/model/asl-mnist-metrics.json
