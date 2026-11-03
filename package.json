@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "latency": "node --env-file=.env scripts/latency.ts",
     "postinstall": "node scripts/copy-mediapipe.mjs",
-    "model": "node scripts/build-model.ts"
+    "model": "node scripts/build-model.ts",
+    "train:asl-mnist": "python3 scripts/train-aslmnist.py"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "1.1.1",
