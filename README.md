@@ -105,7 +105,10 @@ Open http://localhost:3000.
 | `npm test` | Unit tests (Node's built-in test runner) |
 | `npm run lint` · `npm run typecheck` | ESLint · TypeScript |
 | `npm run model` | Rebuilds `public/model/letters.json` from `data/raw/asl-now` and `data/landmarks/*.json`, and prints held-out accuracy |
+| `npm run train:asl-mnist` | Trains a separate image CNN from Voxel51 ASL-MNIST; writes an ONNX model and official test metrics under `public/model/` |
 | `npm run latency -- scripts/fixtures/hand-crop.jpg` | Times Meta API calls from your machine (about $0.02) |
+
+For ASL-MNIST training, install the Python dependencies once with `python3 -m pip install -r requirements-aslmnist.txt`.
 
 ---
 
@@ -116,7 +119,9 @@ Open http://localhost:3000.
 3. **Deaf:** sign letters to your camera and hold each one for about half a second. Lower your hand to finish a word. Muse Spark decodes the letters using the conversation, and the hearing side reads the result.
 4. Either side can **type** instead. This is the fallback if the mic, camera or network misbehaves.
 
-**Letter classifier:** k-nearest-neighbours on hand-shape features that ignore position, size and which hand is used. Built from 2,122 ASLNow samples: **96.6% top-1 and 99.0% top-3 on held-out samples**. This is optimistic, because the same signers are in training and test; expect lower for new signers until NSL and team recordings are added. The weakest letters are A (vs S) and Z.
+**Landmark letter classifier:** k-nearest-neighbours on hand-shape features that ignore position, size and which hand is used. The current generated model combines 2,122 ASL baseline samples and 483 NSL photo landmarks. Its held-out sample score is **95.8% top-1 and 99.0% top-3**. This is optimistic because the split does not hold out signers; collect recorder data with signer IDs for the new-person test.
+
+**Voxel51 ASL-MNIST image classifier:** `npm run train:asl-mnist` trains a separate CNN on the dataset's 28×28 grayscale images and official train/test split. It recovers the correct letter labels from the FiftyOne `samples.json` annotations; do not use the auto-generated Parquet `label` column. The dataset covers 24 static ASL letters and excludes J and Z. The trained run reached **93.1% top-1 and 97.8% top-3 on the official 7,172-image test split**. The model is exported as ONNX with a PyTorch checkpoint and test metrics. It is a separate experimental image model; the live `/call` page still uses the landmark classifier because these pixels are not 21-point hand landmarks.
 
 ## Data tools
 
