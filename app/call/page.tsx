@@ -6,8 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import { classify, features, type Guess, type Model } from "@/lib/classify";
 import { toPoints, unflat, type Point } from "@/lib/dataset";
 import { loadPoses } from "@/lib/handArt";
-import { handLandmarker } from "@/lib/hands";
-import { createSpeller } from "@/lib/speller";
+import { drawHand, handLandmarker } from "@/lib/hands";
+import { createSpeller, MIN_P } from "@/lib/speller";
 import { encodeWav, resample } from "@/lib/wavEncode";
 import { isLanguage, LANGUAGES, type LanguageCode } from "@/lib/languages";
 import { Avatar } from "./Avatar";
@@ -39,6 +39,9 @@ export default function CallPage() {
   const [talking, setTalking] = useState(false);
   const [typed, setTyped] = useState("");
   const [describing, setDescribing] = useState(false);
+  // Deaf side: what the tracker sees right now ("" = no hand), shown live so the signer knows it's working.
+  const [seen, setSeen] = useState<string | null>(null);
+  const overlay = useRef<HTMLCanvasElement>(null);
   // Hearing side: the language signed messages are read and spoken in.
   const [lang, setLang] = useState<LanguageCode>("en");
   const [speakOut, setSpeakOut] = useState(true);
@@ -152,8 +155,6 @@ export default function CallPage() {
       let note = "";
       try {
         await r.localParticipant.setCameraEnabled(true);
-        const cam = r.localParticipant.getTrackPublication(Track.Source.Camera)?.videoTrack;
-        if (cam && local.current) cam.attach(local.current);
       } catch {
         // Often another tab holds the camera. Stay in the call: reading and typing still work.
         note = " Camera unavailable: close other tabs using it and rejoin to show video.";
@@ -197,19 +198,39 @@ export default function CallPage() {
     if ("speechSynthesis" in window) speechSynthesis.getVoices();
   }, []);
 
+  // Show your own camera once the call screen exists: the <video> isn't rendered while join() runs,
+  // so attaching there left it empty and hand tracking never got a frame.
+  useEffect(() => {
+    const cam = room.current?.localParticipant.getTrackPublication(Track.Source.Camera)?.videoTrack;
+    const el = local.current;
+    if (!joined || !camOn || !cam || !el) return;
+    cam.attach(el);
+    return () => void cam.detach(el);
+  }, [joined, camOn]);
+
   // Deaf side: read signs from the local camera, commit held letters, decode each word, send the sentence after a pause.
   useEffect(() => {
     if (!joined || role !== "deaf") return;
     let frame = 0, stopped = false;
     const push = createSpeller();
+    let shown: string | null = null;
     handLandmarker("VIDEO").then((detector) => {
       const tick = () => {
         if (stopped) return;
         const v = local.current;
-        if (v && v.readyState >= 2 && model.current) {
+        if (v && v.readyState >= 2 && v.videoWidth && model.current) try {
           const t = performance.now();
           const points = toPoints(detector.detectForVideo(v, t).landmarks[0]);
           const top = points ? classify(model.current, features(points, v.videoWidth / v.videoHeight)) : null;
+          const c = overlay.current, ctx = c?.getContext("2d");
+          if (c && ctx) {
+            if (c.width !== v.videoWidth) [c.width, c.height] = [v.videoWidth, v.videoHeight];
+            ctx.clearRect(0, 0, c.width, c.height);
+            if (points) drawHand(ctx, points, "#e8a317");
+          }
+          // Letter plus confidence in 10% steps (re-render only when either changes); commits need MIN_P.
+          const now = top ? `${top[0].letter} ${Math.round(top[0].p * 10) * 10}` : "";
+          if (now !== shown) setSeen((shown = now));
           const ev = push(t, top);
           if (ev.letter) setLetters((w) => [...w, ev.letter!]);
           if (ev.word) {
@@ -217,11 +238,13 @@ export default function CallPage() {
             addWord(ev.word);
           }
           if (ev.sentenceEnd) sendSentence();
+        } catch (e) {
+          console.error(e); // one bad frame must not stop recognition for the rest of the call
         }
         frame = requestAnimationFrame(tick);
       };
       tick();
-    });
+    }).catch(() => setStatus("Hand tracking could not start on this device. Reload, or try Chrome."));
     return () => {
       stopped = true;
       cancelAnimationFrame(frame);
@@ -362,7 +385,6 @@ export default function CallPage() {
     if (!r) return;
     try {
       await r.localParticipant.setCameraEnabled(!camOn);
-      if (!camOn) r.localParticipant.getTrackPublication(Track.Source.Camera)?.videoTrack?.attach(local.current!);
       setCamOn(!camOn);
     } catch {
       setStatus("Camera unavailable: close other apps using it.");
@@ -379,6 +401,7 @@ export default function CallPage() {
     setMessages([]);
     setCamOn(true);
     setRemotes([]);
+    setSeen(null);
     setJoined(false);
     setStatus("You left the call.");
   }
@@ -512,8 +535,9 @@ export default function CallPage() {
                 ))}
               </div>
             )}
-            <div className="absolute right-4 top-4 w-1/4 min-w-24 overflow-hidden rounded-2xl ring-2 ring-cloth/80">
+            <div className={`absolute right-4 top-4 overflow-hidden rounded-2xl ring-2 ring-cloth/80 ${role === "deaf" ? "w-2/5 min-w-36" : "w-1/4 min-w-24"}`}>
               <video ref={local} autoPlay playsInline muted className="aspect-video w-full -scale-x-100 bg-ink object-cover" aria-label="Your camera" />
+              {role === "deaf" && <canvas ref={overlay} aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full -scale-x-100 object-cover" />}
               <span className="absolute bottom-1 left-2 text-xs font-bold drop-shadow">{camOn ? "You" : "Camera off"}</span>
             </div>
 
@@ -559,6 +583,19 @@ export default function CallPage() {
 
           {role === "deaf" && (
             <section className="flex flex-col gap-3 rounded-[1.75rem] bg-dye/70 p-4 ring-1 ring-white/10">
+              <p className="flex items-center gap-2 text-sm" aria-label="Hand tracker">
+                <span className={`h-2.5 w-2.5 rounded-full ${seen ? "bg-green-400" : seen === "" ? "bg-cloth/40" : "animate-pulse bg-sun"}`} aria-hidden="true" />
+                {seen === null
+                  ? camOn ? "Starting hand tracking…" : "Camera off: turn it on to sign."
+                  : seen ? (
+                    <>
+                      Hand seen. Reading <b className="font-display text-base text-sun">{seen.split(" ")[0]}</b>
+                      <span className="text-cloth/70">
+                        {Number(seen.split(" ")[1]) >= MIN_P * 100 ? `· ${seen.split(" ")[1]}% sure, hold still` : `· only ${seen.split(" ")[1]}% sure: make the shape clearer`}
+                      </span>
+                    </>
+                  ) : "No hand in view. Raise one hand inside your camera frame, palm facing the camera."}
+              </p>
               <div aria-label="Letters you are signing" aria-live="polite" className="flex min-h-16 flex-wrap items-center gap-2">
                 {letters.length ? (
                   letters.map((pos, i) => (
