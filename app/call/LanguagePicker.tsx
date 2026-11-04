@@ -1,5 +1,6 @@
 "use client";
 
+// Hearing side: choose the language signed messages are translated into, and toggle read-aloud.
 import { LANGUAGES, type LanguageCode } from "@/lib/languages";
 
 /** Hearing side: which language signed messages arrive in, and whether they're read aloud. */

@@ -1,3 +1,5 @@
+// Spend guard: every paid Meta call first reserves its cost in Postgres (Supabase) and is refused past the cap.
+// Server-only: uses SUPABASE_SECRET_KEY.
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 // Hard cap is half the $150 credits; SAM stops earlier so text keeps working ("cheap mode").

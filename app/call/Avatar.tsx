@@ -1,5 +1,6 @@
 "use client";
 
+// Deaf side: a 2D signer that fingerspells each incoming gloss using recorded hand poses (public/model/poses.json).
 import { useEffect, useRef, useState } from "react";
 import type { Point } from "@/lib/dataset";
 import { blend, paintHand } from "@/lib/handArt";

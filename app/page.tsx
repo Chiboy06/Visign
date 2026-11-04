@@ -1,3 +1,4 @@
+// Landing page (server component, static). Content lives in the arrays below so copy edits don't touch markup.
 import Link from "next/link";
 import { HeroHand } from "./HeroHand";
 

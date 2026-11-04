@@ -1,3 +1,5 @@
+// POST /api/transcribe: one push-to-talk utterance (WAV) to text via Muse Voice Transcribe.
+// Validates the WAV header and size, reserves budget by audio length, then calls Meta.
 import { reserve, transcribeCost } from "@/lib/budget";
 import { bad, degraded } from "@/lib/http";
 import { transcribe } from "@/lib/meta";

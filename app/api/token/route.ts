@@ -1,3 +1,5 @@
+// POST /api/token: a short-lived LiveKit access token for one room. The LiveKit secret stays on the server;
+// the identity is "<role>-<random>" (no names: LiveKit logs identities).
 import { AccessToken } from "livekit-server-sdk";
 import { bad, jsonBody, str } from "@/lib/http";
 

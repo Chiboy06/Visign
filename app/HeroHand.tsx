@@ -1,5 +1,6 @@
 "use client";
 
+// Landing page hero animation: spells V-I-S-I-G-N with real recorded hand poses.
 import { useEffect, useRef, useState } from "react";
 import type { Point } from "@/lib/dataset";
 import { blend, loadPoses, paintHand } from "@/lib/handArt";

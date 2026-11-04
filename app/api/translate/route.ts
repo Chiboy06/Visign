@@ -1,3 +1,5 @@
+// POST /api/translate: the deaf side's spelled words (with classifier alternatives) become one sentence
+// in the listener's language. See the prompt below for exactly what Muse Spark may and may not change.
 import { COST, reserve } from "@/lib/budget";
 import { describeSpelled, isSpelled } from "@/lib/gloss";
 import { bad, jsonBody, str } from "@/lib/http";

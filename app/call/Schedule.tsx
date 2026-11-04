@@ -1,5 +1,6 @@
 "use client";
 
+// Lobby card: schedule a call for later. Makes a room link plus Google Calendar and .ics invites; no server needed.
 import { useEffect, useState } from "react";
 import { googleCalendarUrl, icsFile, type Invite } from "@/lib/invite";
 

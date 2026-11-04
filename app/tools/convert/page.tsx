@@ -1,5 +1,7 @@
 "use client";
 
+// /tools/convert: turns public sign datasets (NSL images, ASLNow JSON) into hand landmarks in the browser,
+// for review and export. Output feeds scripts/build-model.ts.
 import Link from "next/link";
 import { useState } from "react";
 import { ASLNOW_ASPECT, countByLabel, fitToBox, labelFromPath, sourceKey, toPoints, type Lang, type Sample } from "@/lib/dataset";
@@ -9,6 +11,7 @@ type Row = Sample & { id: number; file: string; preview?: string; excluded?: boo
 
 const PER_LABEL_IN_REVIEW = 12;
 
+/** Load files, detect hands, review per label, exclude bad ones, export. */
 export default function ConvertPage() {
   const [lang, setLang] = useState<Lang>("nsl");
   const [rows, setRows] = useState<Row[]>([]);
@@ -16,6 +19,7 @@ export default function ConvertPage() {
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
 
+  // Images go through MediaPipe; JSON files are already landmarks. The label comes from the file or folder name.
   async function convert(files: File[]) {
     setBusy(true);
     const added: Row[] = [];
@@ -67,6 +71,7 @@ export default function ConvertPage() {
   const counts = countByLabel(kept);
   const labels = Object.keys(countByLabel(rows)).sort();
 
+  // Download only the rows not excluded during review.
   function exportJson() {
     const samples: Sample[] = kept.map(({ lang, label, source, aspect, handedness, points }) => ({
       lang, label, source, aspect, handedness, points,
@@ -164,6 +169,7 @@ export default function ConvertPage() {
   );
 }
 
+/** Small skeleton preview of one sample, for spotting bad detections. */
 function HandThumb({ points, aspect }: { points: Sample["points"]; aspect: number }) {
   return (
     <canvas

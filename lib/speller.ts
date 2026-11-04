@@ -1,3 +1,4 @@
+// Turns a stream of per-frame letter guesses into letters, words and sentence ends (timing rules below).
 import type { Guess } from "./classify";
 
 export const HOLD_MS = 500; // a letter counts once its handshape is held this long

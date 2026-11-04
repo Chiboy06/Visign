@@ -1,3 +1,5 @@
+// POST /api/gloss: what the hearing person said (English or Pidgin) becomes plain English for the deaf reader
+// plus a short gloss for the fingerspelling avatar. One Muse Spark call; falls back to a local gloss.
 import { COST, reserve } from "@/lib/budget";
 import { localGloss, parseGlossReply } from "@/lib/gloss";
 import { bad, jsonBody, str } from "@/lib/http";

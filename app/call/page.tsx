@@ -1,5 +1,13 @@
 "use client";
 
+// The call: lobby (join or schedule) and the in-call screen, for both roles.
+//
+// How a message flows:
+//   Hearing: hold to speak -> startTalk/stopTalk (WAV) -> /api/transcribe -> speak() -> /api/gloss
+//            -> send() over the LiveKit data channel -> the deaf side shows English + avatar.
+//   Deaf:    camera -> detection loop (MediaPipe hand + k-NN letters) -> speller -> addWord/sendSentence
+//            -> send() -> the hearing side runs readOut() -> /api/translate -> read aloud.
+// Video goes through LiveKit; messages are JSON over its reliable data channel. Each tab is one participant.
 import { Room, RoomEvent, Track, type RemoteVideoTrack } from "livekit-client";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -24,6 +32,7 @@ const session = typeof crypto !== "undefined" ? crypto.randomUUID() : "server";
 const headers = { "Content-Type": "application/json", "x-session-id": session };
 const newRoomCode = () => Math.random().toString(36).slice(2, 8);
 
+/** Lobby until joined, then the call screen. All call state lives here; helpers below are pure UI. */
 export default function CallPage() {
   const [role, setRole] = useState<Role>("hearing");
   const [roomCode, setRoomCode] = useState("");
@@ -99,12 +108,14 @@ export default function CallPage() {
     loadPoses().then(setPoses).catch(() => setStatus("Could not load the avatar."));
   }, [joined, role]);
 
+  // Show a message, remember it as context for Muse Spark, and start the avatar for incoming speech.
   function addMessage(m: Msg) {
     recent.current = [...recent.current, `${m.who ?? (m.kind === "speech" ? "Hearing" : "Deaf")}: ${m.text}`].slice(-4);
     setMessages((all) => [...all, m]);
     if (m.from === "them" && m.kind === "speech" && m.gloss) setGloss({ id: Date.now(), tokens: m.gloss });
   }
 
+  // Show our own message and broadcast it to everyone in the room (reliable data channel).
   function send(m: Omit<Msg, "from">) {
     const out = { ...m, who: name.trim() || undefined };
     addMessage({ ...out, from: "me" });
@@ -113,6 +124,7 @@ export default function CallPage() {
       .catch(() => setStatus("Message not delivered: connection problem."));
   }
 
+  // Get a token, connect to the room, wire up events (video tiles, messages, people count), turn the camera on.
   async function join() {
     // One connection per tab: a second click while connecting used to open a duplicate (6x messages).
     if (connecting || room.current) return;
@@ -258,6 +270,7 @@ export default function CallPage() {
     setSentence(words.current.map((w) => w.text));
   }
 
+  // Deaf side: send the gathered words as one message, with every letter's alternatives for Muse Spark.
   function sendSentence() {
     if (!words.current.length) return;
     send({ kind: "sign", text: words.current.map((w) => w.text).join(" "), spelled: words.current.map((w) => w.spelled) });
@@ -265,6 +278,7 @@ export default function CallPage() {
     setSentence([]);
   }
 
+  // Deaf side: throw away the letters and words gathered so far.
   function clearSentence() {
     words.current = [];
     setSentence([]);
@@ -301,6 +315,7 @@ export default function CallPage() {
     }
   }
 
+  // Hearing side: stop recording, resample to 16 kHz WAV, transcribe, then send what was said.
   async function stopTalk() {
     const m = mic.current;
     mic.current = null;
@@ -341,6 +356,7 @@ export default function CallPage() {
     send({ kind: "speech", text, translation, gloss: tokens ?? text.toUpperCase().split(/\s+/) });
   }
 
+  // Typing fallback for both sides: hearing text goes through the gloss step, deaf text goes out as signed.
   function submitTyped(e: React.FormEvent) {
     e.preventDefault();
     const text = typed.trim();
@@ -380,6 +396,7 @@ export default function CallPage() {
     }
   }
 
+  // Camera on/off; the effect above re-attaches the self view when it comes back on.
   async function toggleCam() {
     const r = room.current;
     if (!r) return;

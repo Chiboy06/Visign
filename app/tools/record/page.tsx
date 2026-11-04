@@ -1,5 +1,7 @@
 "use client";
 
+// /tools/record: records your own signs as hand joints only (never video), with consent, for training.
+// Space captures a still letter (or a motion for J, Z and words); exports JSON for scripts/build-model.ts.
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { countByLabel, DIGITS, LETTERS, toPoints, WORDS, type Lang, type Motion, type Point, type Sample } from "@/lib/dataset";
@@ -8,6 +10,7 @@ import { downloadJson, drawHand, handLandmarker } from "@/lib/hands";
 const MOTION_MS = 1500;
 const isMotion = (label: string) => label === "J" || label === "Z" || WORDS.includes(label);
 
+/** Camera + live hand skeleton; capture stills or short motions per label, then export. */
 export default function RecordPage() {
   const video = useRef<HTMLVideoElement>(null);
   const overlay = useRef<HTMLCanvasElement>(null);
@@ -26,6 +29,7 @@ export default function RecordPage() {
   const source = `rec:${signer.trim().toLowerCase() || "anon"}`;
   const aspect = () => (video.current ? video.current.videoWidth / video.current.videoHeight : 4 / 3);
 
+  // Start the camera and the per-frame hand detection loop (keeps the latest hand in `latest`).
   async function start() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -73,6 +77,7 @@ export default function RecordPage() {
   // Release the camera when leaving the page.
   useEffect(() => () => (video.current?.srcObject as MediaStream | null)?.getTracks().forEach((t) => t.stop()), []);
 
+  // Save the current hand as one sample of the selected letter.
   function captureStill() {
     const hand = latest.current;
     if (!hand) return setMessage("No hand in view.");
@@ -80,6 +85,7 @@ export default function RecordPage() {
     setMessage(`Captured ${label}.`);
   }
 
+  // Record MOTION_MS of frames for signs that move (J, Z, words); too few hand frames is rejected.
   function recordMotion() {
     if (recording.current) return;
     recording.current = { lang, label, source, aspect: aspect(), frames: [] };

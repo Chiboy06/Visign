@@ -1,3 +1,4 @@
+// Letter recognition: a k-nearest-neighbour classifier over hand-shape features. Runs in the browser every frame.
 import type { Point } from "./dataset";
 
 export type Guess = { letter: string; p: number };

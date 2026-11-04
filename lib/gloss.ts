@@ -1,3 +1,4 @@
+// Gloss helpers: local fallback gloss, parsing Muse Spark's reply, and validating/describing spelled letters.
 import type { Guess } from "./classify";
 
 // Words a gloss drops; used when Muse Spark is late or unavailable.

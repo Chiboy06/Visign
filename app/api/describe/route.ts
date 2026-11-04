@@ -1,3 +1,4 @@
+// POST /api/describe: one camera photo described for a blind or low-vision listener (Muse Spark vision).
 import { COST, reserve } from "@/lib/budget";
 import { bad, jsonBody } from "@/lib/http";
 import { isLanguage, LANGUAGES } from "@/lib/languages";
