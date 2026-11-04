@@ -38,9 +38,9 @@ export function Schedule() {
     setCopied("");
   }
 
-  const field = "mt-1 w-full rounded-2xl border-2 border-ink/15 bg-white px-4 py-2.5";
+  const field = "mt-1 w-full min-w-0 rounded-2xl border-2 border-ink/15 bg-white px-4 py-2.5";
   return (
-    <section className="rounded-[2rem] bg-white p-6 ring-1 ring-ink/10" aria-labelledby="schedule-h">
+    <section className="min-w-0 rounded-[2rem] bg-white p-5 ring-1 ring-ink/10 sm:p-6" aria-labelledby="schedule-h">
       <h2 id="schedule-h" className="font-display text-2xl font-bold">Schedule for later</h2>
       <p className="mt-1 text-sm text-ink/70">Get a meeting link and add it to your calendar. No account needed.</p>
       <form onSubmit={create} className="mt-4 grid gap-3">
@@ -48,7 +48,7 @@ export function Schedule() {
           Title
           <input className={field} value={title} maxLength={80} onChange={(e) => setTitle(e.target.value)} />
         </label>
-        <div className="grid grid-cols-[1fr_auto] gap-3">
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
           <label className="block text-sm font-bold">
             Starts
             <input type="datetime-local" required className={field} value={when} onChange={(e) => setWhen(e.target.value)} />

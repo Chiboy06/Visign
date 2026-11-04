@@ -47,7 +47,7 @@ export default function Home() {
             <Link href="/call" className="rounded-full bg-cloth px-4 py-2 font-bold text-ink">Start a call</Link>
           </div>
         </nav>
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-5 pb-14 pt-6 sm:px-8 md:grid-cols-[1.1fr_1fr] md:pb-20">
+        <div className="mx-auto grid max-w-6xl items-center gap-10 px-5 pb-14 pt-6 sm:px-8 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] md:pb-20">
           <div>
             <p className="inline-block rounded-full bg-white/10 px-3 py-1 text-sm">Built on Meta’s Muse models</p>
             <h1 className="mt-6 font-display text-5xl font-extrabold leading-[1.02] tracking-tight sm:text-7xl">

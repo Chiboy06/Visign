@@ -46,9 +46,9 @@ export function HeroHand() {
   }, []);
 
   return (
-    <figure className="flex flex-col items-center">
+    <figure className="flex min-w-0 flex-col items-center">
       <canvas ref={canvas} width={SIZE} height={SIZE} className="aspect-square w-full max-w-[420px]" aria-hidden="true" />
-      <figcaption className="font-display text-5xl font-bold tracking-[0.35em] text-cloth sm:text-6xl" aria-label="Fingerspelling Visign">
+      <figcaption className="font-display text-4xl font-bold tracking-[0.3em] text-cloth sm:text-5xl lg:text-6xl" aria-label="Fingerspelling Visign">
         {[...WORD].map((c, n) => (
           <span key={n} className={n < shown ? "text-sun" : "text-cloth/25"}>{c}</span>
         ))}

@@ -436,7 +436,7 @@ export default function CallPage() {
             <p className="mt-3 max-w-2xl text-lg text-cloth/80">Start a call now, join with a code, or schedule one and send the invite.</p>
           </div>
         </header>
-        <div className="mx-auto grid w-full max-w-6xl items-start gap-8 px-5 py-8 sm:px-8 lg:grid-cols-[minmax(0,1fr)_26rem]">
+        <div className="mx-auto grid w-full max-w-6xl grid-cols-[minmax(0,1fr)] items-start gap-8 px-5 py-8 sm:px-8 lg:grid-cols-[minmax(0,1fr)_26rem]">
           <div>
           <h2 className="mb-5 font-display text-2xl font-bold">Start or join now</h2>
           <fieldset>
@@ -527,42 +527,42 @@ export default function CallPage() {
               Copy invite link
             </button>
           </div>
-          <p className="flex items-center gap-2 truncate text-sm text-cloth/80" role="status">
+          <p className="flex min-w-0 items-center gap-2 text-sm text-cloth/80 sm:truncate" role="status">
             <span className="h-2 w-2 rounded-full bg-sun" aria-hidden="true" />
             {status || "In call"}
           </p>
         </div>
       </header>
 
-      <div className="mx-auto grid w-full max-w-7xl flex-1 gap-4 p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_400px]">
+      <div className="mx-auto grid w-full max-w-7xl flex-1 grid-cols-[minmax(0,1fr)] gap-4 p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_400px]">
         <div className="flex min-w-0 flex-col gap-4">
           {/* Stage: the other person, your own tile, and the call controls floating over the video */}
           <div className="relative overflow-hidden rounded-[1.75rem] bg-dye ring-1 ring-white/10">
             {remotes.length === 0 ? (
-              <div className="grid aspect-video w-full place-items-center p-6 text-center">
+              <div className="grid min-h-64 w-full place-items-center p-6 pt-28 text-center sm:aspect-video sm:min-h-0 sm:pt-6">
                 <div>
                   <p className="font-display text-2xl font-bold">Waiting for others to join</p>
                   <p className="mt-2 text-cloth/70">Share the invite link. Several people can join one room.</p>
                 </div>
               </div>
             ) : (
-              <div className={remotes.length > 1 ? "grid grid-cols-2 gap-2 p-2 pb-24" : ""}>
+              <div className={remotes.length > 1 ? "grid grid-cols-2 gap-2 p-2 sm:pb-24" : ""}>
                 {remotes.map((p) => (
                   <RemoteTile key={p.id + p.track.sid} track={p.track} label={p.id.startsWith("deaf-") ? "Signer" : "Speaker"} rounded={remotes.length > 1} />
                 ))}
               </div>
             )}
-            <div className={`absolute right-4 top-4 overflow-hidden rounded-2xl ring-2 ring-cloth/80 ${role === "deaf" ? "w-2/5 min-w-36" : "w-1/4 min-w-24"}`}>
+            <div className={`absolute right-4 top-4 overflow-hidden rounded-2xl ring-2 ring-cloth/80 ${role === "deaf" ? "w-1/3 sm:w-2/5" : "w-1/4 min-w-20"}`}>
               <video ref={local} autoPlay playsInline muted className="aspect-video w-full -scale-x-100 bg-ink object-cover" aria-label="Your camera" />
               {role === "deaf" && <canvas ref={overlay} aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full -scale-x-100 object-cover" />}
               <span className="absolute bottom-1 left-2 text-xs font-bold drop-shadow">{camOn ? "You" : "Camera off"}</span>
             </div>
 
-            <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-3 rounded-full bg-ink/75 px-3 py-2 backdrop-blur">
+            <div className="mx-auto my-3 flex w-fit items-center gap-2 rounded-full bg-ink/75 px-3 py-2 backdrop-blur sm:absolute sm:bottom-4 sm:left-1/2 sm:my-0 sm:-translate-x-1/2 sm:gap-3">
               {role === "hearing" && (
                 <button
                   aria-pressed={talking}
-                  className={`relative flex h-14 items-center gap-2 rounded-full px-5 font-display font-bold ${talking ? "bg-sun text-ink" : "bg-vat text-cloth"}`}
+                  className={`relative flex h-12 items-center gap-2 rounded-full px-4 font-display font-bold sm:h-14 sm:px-5 ${talking ? "bg-sun text-ink" : "bg-vat text-cloth"}`}
                   onPointerDown={startTalk} onPointerUp={stopTalk} onPointerLeave={() => talking && stopTalk()}
                   onKeyDown={(e) => e.key === " " && !e.repeat && startTalk()} onKeyUp={(e) => e.key === " " && stopTalk()}
                 >
@@ -570,12 +570,16 @@ export default function CallPage() {
                   <svg aria-hidden="true" viewBox="0 0 24 24" className="relative h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                     <rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
                   </svg>
-                  <span className="relative whitespace-nowrap">{talking ? "Release to send" : "Hold to speak"}</span>
+                  <span className="relative whitespace-nowrap">
+                    {/* Phones get the short label so the whole control bar fits; screen readers get the full one. */}
+                    <span className="min-[400px]:hidden" aria-hidden="true">{talking ? "Release" : "Hold"}</span>
+                    <span className="max-[399px]:sr-only">{talking ? "Release to send" : "Hold to speak"}</span>
+                  </span>
                 </button>
               )}
               <button
                 aria-label="Describe what my camera sees" title="Describe what my camera sees" onClick={describe} disabled={describing}
-                className="grid h-12 w-12 place-items-center rounded-full bg-white/15 hover:bg-white/25 disabled:animate-pulse"
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-full sm:h-12 sm:w-12 bg-white/15 hover:bg-white/25 disabled:animate-pulse"
               >
                 <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" />
@@ -583,14 +587,14 @@ export default function CallPage() {
               </button>
               <button
                 aria-pressed={!camOn} aria-label={camOn ? "Turn camera off" : "Turn camera on"} onClick={toggleCam}
-                className={`grid h-12 w-12 place-items-center rounded-full ${camOn ? "bg-white/15 hover:bg-white/25" : "bg-cloth text-ink"}`}
+                className={`grid h-11 w-11 shrink-0 place-items-center rounded-full sm:h-12 sm:w-12 ${camOn ? "bg-white/15 hover:bg-white/25" : "bg-cloth text-ink"}`}
               >
                 <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="6" width="13" height="12" rx="2" /><path d="m16 10 5-3v10l-5-3" />
                   {!camOn && <path d="M3 3l18 18" />}
                 </svg>
               </button>
-              <button aria-label="Leave call" onClick={leave} className="grid h-12 w-12 place-items-center rounded-full bg-red-600 hover:bg-red-700">
+              <button aria-label="Leave call" onClick={leave} className="grid h-11 w-11 shrink-0 place-items-center rounded-full sm:h-12 sm:w-12 bg-red-600 hover:bg-red-700">
                 <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 rotate-[135deg]" fill="currentColor">
                   <path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z" />
                 </svg>
@@ -645,7 +649,7 @@ export default function CallPage() {
           )}
         </div>
 
-        <aside className="flex min-h-0 flex-col gap-4">
+        <aside className="flex min-h-0 min-w-0 flex-col gap-4">
           {role === "deaf" ? <Avatar poses={poses} gloss={gloss} /> : <LanguagePicker lang={lang} onLang={pickLang} speak={speakOut} onSpeak={pickSpeak} />}
 
           <section className="flex min-h-80 flex-1 flex-col rounded-[1.75rem] bg-dye/70 ring-1 ring-white/10">

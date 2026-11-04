@@ -89,26 +89,26 @@ export default function ConvertPage() {
       </p>
 
       <div className="mt-6 flex flex-wrap items-end gap-4">
-        <label className="flex flex-col text-sm">
+        <label className="flex min-w-0 max-w-full flex-col text-sm">
           Language of the files you load next
           <select className="mt-1 rounded border px-2 py-1" value={lang} onChange={(e) => setLang(e.target.value as Lang)}>
             <option value="nsl">NSL: Nigerian Sign Language</option>
             <option value="asl">ASL: American Sign Language</option>
           </select>
         </label>
-        <label className="flex flex-col text-sm">
+        <label className="flex min-w-0 max-w-full flex-col text-sm">
           Pick a folder
           <input
-            type="file" disabled={busy} className="mt-1 text-sm"
+            type="file" disabled={busy} className="mt-1 w-full max-w-full text-sm"
             // @ts-expect-error webkitdirectory is supported by Chrome, Edge, Firefox and Safari but not typed by React
             webkitdirectory=""
             onChange={(e) => e.target.files && convert([...e.target.files])}
           />
         </label>
-        <label className="flex flex-col text-sm">
+        <label className="flex min-w-0 max-w-full flex-col text-sm">
           …or pick files
           <input
-            type="file" multiple disabled={busy} accept="image/*,.json" className="mt-1 text-sm"
+            type="file" multiple disabled={busy} accept="image/*,.json" className="mt-1 w-full max-w-full text-sm"
             onChange={(e) => e.target.files && convert([...e.target.files])}
           />
         </label>
