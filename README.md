@@ -111,9 +111,9 @@ Open http://localhost:3000.
 
 ## Using a call
 
-1. Open `/call`, choose **Hearing** or **Deaf**, and join. Send the other person the share link (it opens with the other role).
+1. Open `/call`, choose **Hearing** or **Deaf**, type an optional name, and join. Share the invite link (it opens with the other role). Several people can join one room: each gets a video tile, and messages show who sent them.
 2. **Hearing:** hold **Hold to speak** (or Space), talk, and release. Muse Voice Transcribe turns it into text, Muse Spark shortens it to gloss, and the deaf side sees captions plus the avatar fingerspelling it.
-3. **Deaf:** sign letters to your camera and hold each one for about half a second. Lower your hand briefly to finish a word; the words gather as a sentence. Pause for 3 seconds (or tap **Send now**) to send it. Muse Spark fixes unclear letters in each word, then writes the words as one natural sentence for the hearing side ("YOU WANT WATER" → "Do you want water?").
+3. **Deaf:** sign letters to your camera and hold each one for about half a second. Lower your hand briefly to finish a word; the words gather as a sentence. Pause for 2.5 seconds (or tap **Send now**) to send it. Muse Spark fixes unclear letters in each word, then writes the words as one natural sentence for the hearing side ("YOU WANT WATER" → "Do you want water?").
 4. **Hearing:** pick the language signing reaches you in (English, Yorùbá, Hausa, Igbo, Naijá, Français), on the join screen or during the call; it's remembered on the device. Signed messages are translated by Muse Spark, shown with the original underneath, and read aloud by the browser's built-in voice when the device has one for that language.
 5. Either side can **type** instead. This is the fallback if the mic, camera or network misbehaves.
 
@@ -182,8 +182,9 @@ ARCHITECTURE.md   How and why: stack, scaling, load, security, measurements
 The test photo in `scripts/fixtures/` is a public-domain NASA image (see `SOURCES.txt`). It is **not** sign language and is used only to time SAM.
 
 ## Roadmap
+- Accounts and team workspaces for organisations (Supabase Auth), saved transcripts with consent
 - Live call (LiveKit), classifier, 2D avatar, then a 3D VRM avatar
-- App-store builds (Capacitor), and smart glasses via [xg-glass-sdk](https://github.com/hkust-spark/xg-glass-sdk)
+- App-store builds (Capacitor), and smart glasses via [xg-glass-sdk](https://github.com/hkust-spark/xg-glass-sdk), and a signing avatar in VR meeting rooms
 - More sign languages: each language is data (recordings), not code
 - Review by deaf signers of every recorded sign
 

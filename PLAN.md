@@ -112,7 +112,7 @@ Hearing device                                  Deaf device
 - **Frontend:** Next.js 15 (App Router) + React + TypeScript, as a PWA (manifest file + icon), phone-first layout. Camera/call/avatar screens are client components. Roles are set with `?role=hearing` / `?role=deaf`.
 - **Server:** Next.js Route Handlers (`app/api/*/route.ts`). It holds the key (never in the browser), forwards calls to Meta, and enforces the cost cap. ARCHITECTURE.md explains why.
 - **Hosting:** Vercel (native Next.js, HTTPS by default, automatic scaling). **A TURN relay is required for mobile data.**
-- **Why it scales:** video is peer to peer, the server is stateless and passes only text and occasional frames, and one codebase covers desktop and mobile.
+- **Why it scales:** video goes through a managed SFU (LiveKit), the server is stateless and passes only text and occasional frames, and one codebase covers desktop and mobile.
 
 ## 8. Team split (adjust after your discussion)
 - **Person A, recognition:** recorder page, dataset → joint points, classifier, SAM link, Muse Spark decoder.

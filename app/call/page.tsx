@@ -1,6 +1,6 @@
 "use client";
 
-import { Room, RoomEvent, Track } from "livekit-client";
+import { Room, RoomEvent, Track, type RemoteVideoTrack } from "livekit-client";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { classify, features, type Guess, type Model } from "@/lib/classify";
@@ -16,7 +16,8 @@ import { LanguagePicker } from "./LanguagePicker";
 type Role = "hearing" | "deaf";
 // `translation`: what the reader sees (English for the deaf side, the chosen language for the hearing side).
 // `spelled`: the deaf side's letters with the classifier's alternatives, so Muse Spark can fix misreads.
-type Msg = { from: "me" | "them"; kind: "speech" | "sign"; text: string; gloss?: string[]; translation?: string; spelled?: Guess[][][] };
+type Msg = { from: "me" | "them"; kind: "speech" | "sign"; text: string; gloss?: string[]; translation?: string; spelled?: Guess[][][]; who?: string };
+// `who`: optional display name from the join screen. It travels in messages only, never in LiveKit identities (those get logged).
 
 const session = typeof crypto !== "undefined" ? crypto.randomUUID() : "server";
 const headers = { "Content-Type": "application/json", "x-session-id": session };
@@ -65,7 +66,9 @@ export default function CallPage() {
 
   const room = useRef<Room | null>(null);
   const local = useRef<HTMLVideoElement>(null);
-  const remote = useRef<HTMLVideoElement>(null);
+  // Everyone else in the room with a camera on: one tile each (a room can hold many people).
+  const [remotes, setRemotes] = useState<{ id: string; track: RemoteVideoTrack }[]>([]);
+  const [name, setName] = useState("");
   const model = useRef<Model | null>(null);
   const recent = useRef<string[]>([]);
   const mic = useRef<{ stop: () => Float32Array; rate: number } | null>(null);
@@ -92,15 +95,16 @@ export default function CallPage() {
   }, [joined, role]);
 
   function addMessage(m: Msg) {
-    recent.current = [...recent.current, `${m.kind === "speech" ? "Hearing" : "Deaf"}: ${m.text}`].slice(-4);
+    recent.current = [...recent.current, `${m.who ?? (m.kind === "speech" ? "Hearing" : "Deaf")}: ${m.text}`].slice(-4);
     setMessages((all) => [...all, m]);
     if (m.from === "them" && m.kind === "speech" && m.gloss) setGloss({ id: Date.now(), tokens: m.gloss });
   }
 
   function send(m: Omit<Msg, "from">) {
-    addMessage({ ...m, from: "me" });
+    const out = { ...m, who: name.trim() || undefined };
+    addMessage({ ...out, from: "me" });
     room.current?.localParticipant
-      .publishData(new TextEncoder().encode(JSON.stringify(m)), { reliable: true })
+      .publishData(new TextEncoder().encode(JSON.stringify(out)), { reliable: true })
       .catch(() => setStatus("Message not delivered: connection problem."));
   }
 
@@ -117,20 +121,30 @@ export default function CallPage() {
       const { token, url, error } = await res.json();
       if (!res.ok || !token || !url) throw new Error(error ?? "LiveKit is not configured on the server");
       r = new Room({ adaptiveStream: true, dynacast: true });
-      r.on(RoomEvent.TrackSubscribed, (track) => {
-        if (track.kind === Track.Kind.Video && remote.current) track.attach(remote.current);
+      const room1 = r;
+      const count = () => `${room1.remoteParticipants.size + 1} people in the call.`;
+      r.on(RoomEvent.TrackSubscribed, (track, _pub, participant) => {
+        if (track.kind === Track.Kind.Video)
+          setRemotes((all) => [...all.filter((x) => x.id !== participant.identity), { id: participant.identity, track: track as RemoteVideoTrack }]);
+      });
+      r.on(RoomEvent.TrackUnsubscribed, (track, _pub, participant) => {
+        setRemotes((all) => all.filter((x) => !(x.id === participant.identity && x.track === track)));
       });
       r.on(RoomEvent.DataReceived, (payload, participant) => {
-        // Only the other role talks to us; another tab of ours must not echo our own words back.
-        if (participant?.identity.startsWith(`${role}-`)) return;
+        if (!participant) return; // server messages: none expected
         try {
           const m: Msg = { ...JSON.parse(new TextDecoder().decode(payload)), from: "them" };
+          if (typeof m.who !== "string") m.who = participant.identity.startsWith("deaf-") ? "Signer" : "Speaker";
+          m.who = m.who.slice(0, 30);
           addMessage(m);
-          if (m.kind === "sign") void readOut(m);
+          if (m.kind === "sign" && role === "hearing") void readOut(m);
         } catch {} // ignore malformed messages from the other side
       });
-      r.on(RoomEvent.ParticipantConnected, () => setStatus("The other person joined."));
-      r.on(RoomEvent.ParticipantDisconnected, () => setStatus("The other person left."));
+      r.on(RoomEvent.ParticipantConnected, () => setStatus(count()));
+      r.on(RoomEvent.ParticipantDisconnected, (p) => {
+        setRemotes((all) => all.filter((x) => x.id !== p.identity));
+        setStatus(room1.remoteParticipants.size ? count() : "Everyone else left.");
+      });
       await r.connect(url, token);
       room.current = r;
       let note = "";
@@ -145,7 +159,7 @@ export default function CallPage() {
       }
       window.history.replaceState(null, "", `/call?room=${roomCode}&role=${role}`);
       setJoined(true);
-      setStatus((r.remoteParticipants.size ? "Connected." : "Waiting for the other person…") + note);
+      setStatus((r.remoteParticipants.size ? count() : "Waiting for others to join…") + note);
     } catch (e) {
       await r?.disconnect(); // never leave a half-open connection behind
       room.current = null;
@@ -332,6 +346,7 @@ export default function CallPage() {
     setLetters([]);
     setMessages([]);
     setCamOn(true);
+    setRemotes([]);
     setJoined(false);
     setStatus("You left the call.");
   }
@@ -372,7 +387,15 @@ export default function CallPage() {
             </div>
           )}
 
-          <label className="mt-8 block font-display text-xl font-bold" htmlFor="room">Room code</label>
+          <label className="mt-8 block font-display text-xl font-bold" htmlFor="name">
+            Your name <span className="font-sans text-base font-normal text-ink/60">(optional, shown in the chat)</span>
+          </label>
+          <input
+            id="name" className="mt-2 w-full rounded-2xl border-2 border-ink/15 bg-white px-4 py-3 text-xl"
+            value={name} maxLength={30} onChange={(e) => setName(e.target.value)} autoComplete="given-name"
+          />
+
+          <label className="mt-6 block font-display text-xl font-bold" htmlFor="room">Room code</label>
           <input
             id="room" className="mt-2 w-full rounded-2xl border-2 border-ink/15 bg-white px-4 py-3 text-xl tracking-wider"
             value={roomCode} onChange={(e) => setRoomCode(e.target.value.toLowerCase())} autoComplete="off" spellCheck={false}
@@ -384,7 +407,7 @@ export default function CallPage() {
 
           {shareLink && (
             <div className="mt-6 rounded-2xl bg-white p-4">
-              <p className="text-sm text-ink/70">Send this link to the other person. It opens with their role chosen.</p>
+              <p className="text-sm text-ink/70">Send this link to anyone joining. It opens with the other role chosen; they can switch it.</p>
               <div className="mt-2 flex gap-2">
                 <code className="min-w-0 flex-1 truncate rounded-lg bg-cloth px-3 py-2 text-sm">{shareLink}</code>
                 <button
@@ -432,10 +455,20 @@ export default function CallPage() {
         <div className="flex min-w-0 flex-col gap-4">
           {/* Stage: the other person, your own tile, and the call controls floating over the video */}
           <div className="relative overflow-hidden rounded-[1.75rem] bg-dye ring-1 ring-white/10">
-            <video ref={remote} autoPlay playsInline className="aspect-video w-full object-cover" aria-label="The other person's video" />
-            <span className="absolute left-4 top-4 rounded-full bg-ink/70 px-3 py-1 text-sm backdrop-blur">
-              {role === "hearing" ? "Deaf signer" : "Hearing speaker"}
-            </span>
+            {remotes.length === 0 ? (
+              <div className="grid aspect-video w-full place-items-center p-6 text-center">
+                <div>
+                  <p className="font-display text-2xl font-bold">Waiting for others to join</p>
+                  <p className="mt-2 text-cloth/70">Share the invite link. Several people can join one room.</p>
+                </div>
+              </div>
+            ) : (
+              <div className={remotes.length > 1 ? "grid grid-cols-2 gap-2 p-2 pb-24" : ""}>
+                {remotes.map((p) => (
+                  <RemoteTile key={p.id + p.track.sid} track={p.track} label={p.id.startsWith("deaf-") ? "Signer" : "Speaker"} rounded={remotes.length > 1} />
+                ))}
+              </div>
+            )}
             <div className="absolute right-4 top-4 w-1/4 min-w-24 overflow-hidden rounded-2xl ring-2 ring-cloth/80">
               <video ref={local} autoPlay playsInline muted className="aspect-video w-full -scale-x-100 bg-ink object-cover" aria-label="Your camera" />
               <span className="absolute bottom-1 left-2 text-xs font-bold drop-shadow">{camOn ? "You" : "Camera off"}</span>
@@ -520,7 +553,7 @@ export default function CallPage() {
               )}
               {messages.map((m, i) => (
                 <li key={i} className={`max-w-[88%] ${m.from === "me" ? "self-end text-right" : "self-start"}`}>
-                  <span className="text-xs text-cloth/60">{m.from === "me" ? "You" : "They"} {m.kind === "speech" ? "spoke" : "signed"}</span>
+                  <span className="text-xs text-cloth/60">{m.from === "me" ? "You" : m.who ?? "They"} {m.kind === "speech" ? "spoke" : "signed"}</span>
                   <p className={`mt-0.5 rounded-3xl px-4 py-2 text-left text-lg ${m.kind === "speech" ? "bg-vat text-cloth" : "bg-sun text-ink"}`}>
                     {m.translation ?? m.text}
                     {m.translation && <span className="mt-1 block text-sm opacity-70">{m.text}</span>}
@@ -553,4 +586,21 @@ function sayAloud(text: string, lang: LanguageCode): boolean {
   u.lang = voice?.lang ?? "en-NG";
   speechSynthesis.speak(u);
   return true;
+}
+
+/** One remote participant's video; the LiveKit track stays attached while the tile is shown. */
+function RemoteTile({ track, label, rounded }: { track: RemoteVideoTrack; label: string; rounded: boolean }) {
+  const video = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    const el = video.current;
+    if (!el) return;
+    track.attach(el);
+    return () => void track.detach(el);
+  }, [track]);
+  return (
+    <div className={`relative overflow-hidden bg-ink ${rounded ? "rounded-2xl" : ""}`}>
+      <video ref={video} autoPlay playsInline className="aspect-video w-full object-cover" aria-label={`${label} video`} />
+      <span className="absolute left-3 top-3 rounded-full bg-ink/70 px-3 py-1 text-sm backdrop-blur">{label}</span>
+    </div>
+  );
 }

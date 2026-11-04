@@ -14,7 +14,7 @@ Copy-paste text for the Cerebral Valley form, plus the demo script. Fill in the 
 A live two-way video call between a hearing and a deaf person: speech becomes captions and a fingerspelling avatar, and fingerspelling becomes a natural sentence, read aloud in the listener's language.
 
 ## Short description (about 100 words)
-Speech-to-text helps a deaf person read what is said, but when they sign back, nobody understands. Visign translates both ways in one call that runs in any browser. The hearing person holds a button and talks, in English or Nigerian Pidgin. The deaf person reads plain English and watches a cartoon signer fingerspell it. The deaf person fingerspells to their camera. Their letters become one natural sentence that the hearing person reads and hears, in English, Yorùbá, Hausa, Igbo, Pidgin or French. Hands are tracked on the device, video goes peer to peer, and it's built with Nigerian Sign Language data.
+Speech-to-text helps a deaf person read what is said, but when they sign back, nobody understands. Visign translates both ways in one call that runs in any browser. The hearing person holds a button and talks, in English or Nigerian Pidgin. The deaf person reads plain English and watches a cartoon signer fingerspell it. The deaf person fingerspells to their camera. Their letters become one natural sentence that the hearing person reads and hears, in English, Yorùbá, Hausa, Igbo, Pidgin or French. Hands are tracked on the device, video travels over LiveKit (never our server), several people can share a room, and it's built with Nigerian Sign Language data.
 
 ## How we used Meta's AI
 - **Muse Voice Transcribe** turns the hearing person's speech into text, one utterance at a time.
@@ -25,7 +25,7 @@ Speech-to-text helps a deaf person read what is said, but when they sign back, n
 
 ## How it works
 - **On the device:** MediaPipe tracks 21 hand joints. A k-nearest-neighbour classifier reads letters from hand-shape features that ignore position, size and which hand is used. A speller turns held letters into words and pauses into sentences.
-- **Call:** LiveKit carries video peer to peer, with a data channel for messages.
+- **Call:** LiveKit carries video, with a data channel for messages. A room holds several people; each message shows who sent it.
 - **Server:** Next.js route handlers on Vercel. The Meta key never reaches the browser.
 - **Budget:** every paid AI call reserves spend first in a locked Postgres function (Supabase). It stops at $75, half our credits.
 - **Fallbacks:** if Meta is slow or down, the app shows the words as spelled or spoken instead of freezing. Typing works both ways.
@@ -52,7 +52,8 @@ Speech-to-text helps a deaf person read what is said, but when they sign back, n
 ## What's next
 1. Word signs from motion: DynASL-24 (CC BY 4.0: HELLO, THANKS, PLEASE, YES, NO…) plus Nigerian signers recorded with our tool.
 2. SAM 3.1 for look-alike fist letters, once it runs in the background.
-3. App-store builds, then smart glasses (captions in view).
+3. Accounts and team workspaces for clinics, schools and businesses (Supabase Auth).
+4. App-store builds, then smart glasses (captions in view) and a signing avatar in VR meeting rooms.
 
 ---
 
