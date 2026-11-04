@@ -14,7 +14,9 @@ import { Avatar } from "./Avatar";
 import { LanguagePicker } from "./LanguagePicker";
 
 type Role = "hearing" | "deaf";
-type Msg = { from: "me" | "them"; kind: "speech" | "sign"; text: string; gloss?: string[]; translation?: string };
+// `translation`: what the reader sees (English for the deaf side, the chosen language for the hearing side).
+// `spelled`: the deaf side's letters with the classifier's alternatives, so Muse Spark can fix misreads.
+type Msg = { from: "me" | "them"; kind: "speech" | "sign"; text: string; gloss?: string[]; translation?: string; spelled?: Guess[][][] };
 
 const session = typeof crypto !== "undefined" ? crypto.randomUUID() : "server";
 const headers = { "Content-Type": "application/json", "x-session-id": session };
@@ -28,10 +30,9 @@ export default function CallPage() {
   const [status, setStatus] = useState("");
   const [messages, setMessages] = useState<Msg[]>([]);
   const [letters, setLetters] = useState<Guess[][]>([]);
-  // Deaf side: decoded words waiting to go out as one sentence.
+  // Deaf side: spelled words waiting to go out as one sentence (no network calls while signing).
   const [sentence, setSentence] = useState<string[]>([]);
-  const words = useRef<string[]>([]);
-  const decoding = useRef<Promise<void>>(Promise.resolve());
+  const words = useRef<{ text: string; spelled: Guess[][] }[]>([]);
   const [talking, setTalking] = useState(false);
   const [typed, setTyped] = useState("");
   // Hearing side: the language signed messages are read and spoken in.
@@ -111,7 +112,7 @@ export default function CallPage() {
     recent.current = [];
     let r: Room | null = null;
     try {
-      const res = await fetch("/api/token", { method: "POST", headers, body: JSON.stringify({ room: roomCode, role }) });
+      const res = await fetch("/api/token", { method: "POST", headers, body: JSON.stringify({ room: roomCode, role }), signal: AbortSignal.timeout(20_000) });
       const { token, url, error } = await res.json();
       if (!res.ok || !token || !url) throw new Error(error ?? "LiveKit is not configured on the server");
       r = new Room({ adaptiveStream: true, dynacast: true });
@@ -158,7 +159,10 @@ export default function CallPage() {
     let text = m.text;
     // Always ask Muse Spark: it also turns spelled words ("YOU WANT WATER") into a sentence in English.
     try {
-      const res = await fetch("/api/translate", { method: "POST", headers, body: JSON.stringify({ text: m.text, to }) });
+      const res = await fetch("/api/translate", {
+        method: "POST", headers, signal: AbortSignal.timeout(25_000),
+        body: JSON.stringify({ text: m.text, to, spelled: m.spelled, context: recent.current }),
+      });
       const out = (await res.json()).text;
       if (out && out.toLowerCase() !== m.text.toLowerCase()) {
         text = out;
@@ -169,6 +173,11 @@ export default function CallPage() {
   }
 
   useEffect(() => () => void room.current?.disconnect(), []);
+
+  // Chrome loads its voice list lazily; asking early means the first message can be read aloud.
+  useEffect(() => {
+    if ("speechSynthesis" in window) speechSynthesis.getVoices();
+  }, []);
 
   // Deaf side: read signs from the local camera, commit held letters, decode each word, send the sentence after a pause.
   useEffect(() => {
@@ -187,9 +196,9 @@ export default function CallPage() {
           if (ev.letter) setLetters((w) => [...w, ev.letter!]);
           if (ev.word) {
             setLetters([]);
-            decodeWord(ev.word);
+            addWord(ev.word);
           }
-          if (ev.sentenceEnd) void sendSentence();
+          if (ev.sentenceEnd) sendSentence();
         }
         frame = requestAnimationFrame(tick);
       };
@@ -202,24 +211,15 @@ export default function CallPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the loop must not restart on every render
   }, [joined, role]);
 
-  // Words decode one after another (in signing order) and wait in `words` until the sentence is sent.
-  function decodeWord(word: Guess[][]) {
-    const raw = word.map((pos) => pos[0].letter).join("");
-    decoding.current = decoding.current.then(async () => {
-      let text = raw;
-      try {
-        const res = await fetch("/api/decode", { method: "POST", headers, body: JSON.stringify({ letters: word, context: recent.current }) });
-        text = (await res.json()).text || raw;
-      } catch {} // keep the letters as signed
-      words.current = [...words.current, text];
-      setSentence(words.current);
-    });
+  // Words wait locally; the hearing side makes one Muse Spark call per sentence (it used to be one per word).
+  function addWord(word: Guess[][]) {
+    words.current = [...words.current, { text: word.map((pos) => pos[0].letter).join(""), spelled: word }];
+    setSentence(words.current.map((w) => w.text));
   }
 
-  async function sendSentence() {
-    await decoding.current; // include words still being decoded
+  function sendSentence() {
     if (!words.current.length) return;
-    send({ kind: "sign", text: words.current.join(" ") });
+    send({ kind: "sign", text: words.current.map((w) => w.text).join(" "), spelled: words.current.map((w) => w.spelled) });
     words.current = [];
     setSentence([]);
   }
@@ -271,6 +271,7 @@ export default function CallPage() {
     try {
       const res = await fetch("/api/transcribe", {
         method: "POST",
+        signal: AbortSignal.timeout(25_000),
         headers: { "Content-Type": "audio/wav", "x-session-id": session },
         body: encodeWav(samples, 16000),
       });
@@ -283,13 +284,20 @@ export default function CallPage() {
     }
   }
 
+  // One call: plain English for the deaf reader (Pidgin or mixed speech included) plus the avatar's gloss.
   async function speak(text: string) {
-    let tokens: string[] | undefined;
+    let english = text, tokens: string[] | undefined;
     try {
-      const res = await fetch("/api/gloss", { method: "POST", headers, body: JSON.stringify({ text, context: recent.current }) });
-      tokens = (await res.json()).gloss;
-    } catch {} // the avatar side falls back to fingerspelling the words
-    send({ kind: "speech", text, gloss: tokens ?? text.toUpperCase().split(/\s+/) });
+      const res = await fetch("/api/gloss", {
+        method: "POST", headers, signal: AbortSignal.timeout(20_000),
+        body: JSON.stringify({ text, context: recent.current }),
+      });
+      const j = await res.json();
+      english = j.english || text;
+      tokens = j.gloss;
+    } catch {} // the deaf side still reads the words as spoken
+    const translation = english.toLowerCase() !== text.toLowerCase() ? english : undefined;
+    send({ kind: "speech", text, translation, gloss: tokens ?? text.toUpperCase().split(/\s+/) });
   }
 
   function submitTyped(e: React.FormEvent) {
@@ -397,13 +405,13 @@ export default function CallPage() {
                 <span key={i} className="rounded-full bg-sun/25 px-4 py-1.5 font-display text-xl font-bold">{w}</span>
               ))
             ) : (
-              <p className="px-2 text-ink/60">Words you spell gather here. Pause for 3 seconds to send them as one sentence.</p>
+              <p className="px-2 text-ink/60">Words you spell gather here. Pause for 2.5 seconds to send them as one sentence.</p>
             )}
             <span className="ml-auto flex gap-2">
               <button className="rounded-full border-2 border-ink/15 px-4 py-2 font-bold disabled:opacity-40" onClick={clearSentence} disabled={!sentence.length && !letters.length}>
                 Clear
               </button>
-              <button className="rounded-full bg-ink px-5 py-2 font-display font-bold text-cloth disabled:opacity-40" onClick={() => void sendSentence()} disabled={!sentence.length}>
+              <button className="rounded-full bg-ink px-5 py-2 font-display font-bold text-cloth disabled:opacity-40" onClick={sendSentence} disabled={!sentence.length}>
                 Send now
               </button>
             </span>

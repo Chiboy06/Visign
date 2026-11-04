@@ -6,7 +6,7 @@ import { classify, features } from "./classify.ts";
 import { countByLabel, labelFromPath, sourceKey, toPoints } from "./dataset.ts";
 import { createSpeller, GAP_MS, HOLD_MS, SENTENCE_GAP_MS } from "./speller.ts";
 import { encodeWav, resample } from "./wavEncode.ts";
-import { localGloss, parseGloss, reordersLetters } from "./gloss.ts";
+import { describeSpelled, isSpelled, localGloss, parseGlossReply } from "./gloss.ts";
 import { wavInfo } from "./wav.ts";
 
 test("SAM stops at the cheap-mode cap, everything else at the hard cap", () => {
@@ -39,16 +39,7 @@ test("wavInfo accepts only what Meta accepts", () => {
   assert.equal(wavInfo(new ArrayBuffer(10)), null);
 });
 
-test("parseGloss reads the JSON array, even wrapped in prose", () => {
-  assert.deepEqual(parseGloss('["WATER","YOU","WANT","?"]', "x"), ["WATER", "YOU", "WANT", "?"]);
-  assert.deepEqual(parseGloss('Sure: ["HELLO"] done', "x"), ["HELLO"]);
-});
 
-test("parseGloss falls back to the local gloss", () => {
-  assert.deepEqual(parseGloss("not json", "Um, would you like some water?"), ["WOULD", "YOU", "LIKE", "SOME", "WATER", "?"]);
-  assert.deepEqual(parseGloss("[]", "hi there"), ["HI", "THERE"]);
-  assert.equal(parseGloss("x", "one two three four five six seven eight nine").length, 8);
-});
 
 test("localGloss keeps the question mark inside the 8-token limit", () => {
   const g = localGloss("one two three four five six seven eight nine?");
@@ -181,13 +172,6 @@ test("speller: lowering the hand allows the same letter again (double letters)",
   assert.equal(push(2 * HOLD_MS + 100, g).letter?.[0].letter, "L");
 });
 
-test("reordersLetters catches rearranged letters but allows real fixes", () => {
-  assert.equal(reordersLetters("IH", "HI"), true); // signed I-H: showing HI would reverse the person
-  assert.equal(reordersLetters("HI", "HI"), false);
-  assert.equal(reordersLetters("HELO", "HELLO"), false); // restored double letter: allowed
-  assert.equal(reordersLetters("WOLD", "WOLF"), false); // one-letter swap: allowed
-  assert.equal(reordersLetters("CTA", "cat"), true);
-});
 
 test("isLanguage accepts only the supported translation targets", async () => {
   const { isLanguage } = await import("./languages.ts");
@@ -211,4 +195,34 @@ test("speller groups words into a sentence that ends after a longer pause", () =
   log(push(t + SENTENCE_GAP_MS, null)); // sentence ends
   log(push(t + SENTENCE_GAP_MS + 5000, null)); // and only once
   assert.deepEqual(events, ["word:NO", "word:Y", "end"]);
+});
+
+test("parseGlossReply reads english + gloss, even wrapped in prose", () => {
+  const r = parseGlossReply('Here: {"english":"Do you want water?","gloss":["YOU","WANT","WATER","?"]}', "Abeg you want water?");
+  assert.deepEqual(r, { english: "Do you want water?", gloss: ["YOU", "WANT", "WATER", "?"] });
+});
+
+test("parseGlossReply falls back to the words as spoken", () => {
+  assert.deepEqual(parseGlossReply("not json", "Um, would you like some water?"), {
+    english: "Um, would you like some water?", gloss: ["WOULD", "YOU", "LIKE", "SOME", "WATER", "?"],
+  });
+  // english present but gloss broken: gloss is rebuilt from the English, not the Pidgin
+  assert.deepEqual(parseGlossReply('{"english":"I am fine.","gloss":"x"}', "I dey fine"), { english: "I am fine.", gloss: ["I", "FINE"] });
+});
+
+test("isSpelled accepts the deaf side's letters and rejects bad input", () => {
+  const ok = [[[{ letter: "Y", p: 0.9 }], [{ letter: "O", p: 0.8 }, { letter: "E", p: 0.1 }]]];
+  assert.equal(isSpelled(ok), true);
+  assert.equal(isSpelled([]), false);
+  assert.equal(isSpelled([[[]]]), false);
+  assert.equal(isSpelled([[[{ letter: "TOOLONG", p: 1 }]]]), false);
+  assert.equal(isSpelled(Array(13).fill(ok[0])), false);
+  assert.equal(isSpelled("YO"), false);
+});
+
+test("describeSpelled keeps signing order and alternatives", () => {
+  assert.equal(
+    describeSpelled([[[{ letter: "H", p: 0.9 }], [{ letter: "I", p: 0.7 }, { letter: "J", p: 0.2 }]], [[{ letter: "U", p: 1 }]]]),
+    ["1: H 90% | I 70%, J 20%", "2: U 100%"].join("\n"),
+  );
 });

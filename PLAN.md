@@ -1,5 +1,7 @@
 # Visign: 3-day build plan
 
+> Planning document written before the build. Not everything here was built; README.md describes what is.
+
 Meta Global AI Developer Hackathon, Indie Dev Track (a team of up to 4; list every member on the form).
 **Submission deadline: Nov 4, 9:00 PM ET = Nov 5, 3:00 AM Lagos time.** Aim to submit on the evening of Nov 4.
 Submit at cerebralvalley.ai/e/meta-ai-developer-hackathon/hackathon/submit. You must be signed in to see the form, so check its fields on Day 1.

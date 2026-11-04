@@ -1,9 +1,9 @@
 import type { Guess } from "./classify";
 
 export const HOLD_MS = 500; // a letter counts once its handshape is held this long
-export const GAP_MS = 1200; // no hand for this long ends the word
+export const GAP_MS = 1000; // no hand for this long ends the word
 export const MIN_P = 0.45; // below this the classifier is unsure: don't commit
-export const SENTENCE_GAP_MS = 3000; // no hand for this long after a word ends the sentence
+export const SENTENCE_GAP_MS = 2500; // no hand for this long after a word ends the sentence
 
 export type SpellEvent = { letter?: Guess[]; word?: Guess[][]; sentenceEnd?: true };
 

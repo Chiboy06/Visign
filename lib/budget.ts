@@ -7,7 +7,7 @@ export const SAM_CAP_USD = 60;
 // Official Meta prices (dev.meta.ai, Oct 2026).
 export const COST = {
   segment: 0.0025, // SAM 3.1, per image
-  text: 0.002, // Muse Spark flat reservation; short prompts cost ~$0.0005
+  text: 0.004, // Muse Spark: up to ~840 output (mostly reasoning) tokens measured = ~$0.0038, so the cap holds
   transcribePerSecond: 3 / 1000 / 60, // $3 per 1,000 minutes
 };
 
@@ -22,6 +22,8 @@ let client: SupabaseClient | null = null;
 const db = () =>
   (client ??= createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!, {
     auth: { persistSession: false },
+    // A stalled budget check must fail closed quickly, not hang the request (and a deaf person's sentence).
+    global: { fetch: (input, init) => fetch(input, { ...init, signal: AbortSignal.timeout(5_000) }) },
   }));
 
 /** Returns true when the spend was recorded under the cap. Fails closed if the DB is unreachable. */

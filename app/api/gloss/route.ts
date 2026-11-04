@@ -1,13 +1,14 @@
 import { COST, reserve } from "@/lib/budget";
-import { localGloss, parseGloss } from "@/lib/gloss";
+import { localGloss, parseGlossReply } from "@/lib/gloss";
 import { bad, jsonBody, str } from "@/lib/http";
 import { spark } from "@/lib/meta";
 
-const INSTRUCTIONS = `You convert spoken English into Nigerian Sign Language gloss for a fingerspelling avatar.
-Fingerspelling is slow, so keep only the words that carry meaning.
-Rules: drop fillers (um, like, you know), articles, and forms of "to be". Keep question words, negation, names and numbers.
-Keep the speaker's word order exactly: the avatar fingerspells English words, so reordering reads as backwards. At most 8 tokens.
-Output ONLY a JSON array of uppercase tokens, e.g. "Do you want water?" -> ["YOU","WANT","WATER","?"]. Use "?" as its own token for questions.`;
+const INSTRUCTIONS = `A hearing person just spoke to a deaf person. The words may be English, Nigerian Pidgin, or a mix.
+Return JSON with two fields:
+"english": what they said as one plain, natural English sentence, so the deaf person can read it (translate Pidgin to standard English; keep the meaning exactly).
+"gloss": the same English for a fingerspelling avatar: uppercase words, keep only words that carry meaning (drop fillers, articles and forms of "to be"; keep question words, negation, names, numbers), in the same order, at most 8, with "?" as its own token for questions.
+Example: "Abeg you want water?" -> {"english":"Do you want water?","gloss":["YOU","WANT","WATER","?"]}
+Output ONLY the JSON.`;
 
 export async function POST(req: Request) {
   const body = await jsonBody(req, 8_000);
@@ -15,15 +16,14 @@ export async function POST(req: Request) {
   if (!text) return bad("text is required (1-1000 chars)");
   const context = Array.isArray(body?.context) ? body.context.filter((c) => typeof c === "string").slice(-4) : [];
 
-  // Budget or Meta trouble never blocks the avatar: answer with the local gloss instead.
+  // Budget or Meta trouble never blocks the avatar: answer with the words as spoken and the local gloss.
   if (!(await reserve("gloss", COST.text, req.headers.get("x-session-id") ?? undefined)))
-    return Response.json({ gloss: localGloss(text), degraded: true });
+    return Response.json({ english: text, gloss: localGloss(text), degraded: true });
   try {
-    const prompt = context.length ? `Recent conversation:\n${context.join("\n")}\n\nConvert: ${text}` : `Convert: ${text}`;
-    const raw = await spark(INSTRUCTIONS, prompt);
-    return Response.json({ gloss: parseGloss(raw, text) });
+    const prompt = context.length ? `Recent conversation:\n${context.join("\n")}\n\nThey said: ${text}` : `They said: ${text}`;
+    return Response.json(parseGlossReply(await spark(INSTRUCTIONS, prompt), text));
   } catch (e) {
     console.error(e);
-    return Response.json({ gloss: localGloss(text), degraded: true });
+    return Response.json({ english: text, gloss: localGloss(text), degraded: true });
   }
 }

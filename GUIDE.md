@@ -160,7 +160,7 @@ Judges score the demo at **25%**: "a working, impressive demo, whether the produ
 4. **How Meta's AI does it (1:40–2:15)**, with on-screen labels:
    - **Muse Voice Transcribe** turns speech into text.
    - **Muse Spark** shortens speech to the words worth signing, and fixes unclear letters using the conversation ("H-E-L-O" becomes "HELLO"), and translates signed messages into Yoruba, Hausa, Igbo, Pidgin or French.
-   - **SAM 3.1** outlines the hand to tell look-alike letters apart.
+   - **SAM 3.1** was speed-tested on hand crops (it found every hand) and is the next step for look-alike letters. Say "tested", not "used live".
    - Hands are tracked on the device, so video never touches our server.
 5. **Impact (2:15–2:35).** "Built with Nigerian signers for Nigerian Sign Language and ASL. Works on any phone browser. Next: word signs, more Nigerian data, smart glasses."
 
@@ -205,7 +205,7 @@ From the Official Rules (re-read Nov 1; unchanged since applications):
 - [ ] **Original work.** Our code is ours. Open-source parts (Next.js, MediaPipe, LiveKit, Supabase) are MIT or Apache-2.0, which is allowed.
 - [ ] **Data licenses respected and credited** (in the README): NSL dataset (CC BY 4.0) and ASLNow! (MIT). **Don't add datasets marked "NC" / non-commercial** (e.g. How2Sign): the rules give Meta a license to use the project for any purpose.
 - [ ] **Privacy:** the call screen tells users what goes to Meta's AI; recordings need consent and store initials only.
-- [ ] **Uses Meta's models:** Muse Spark, Muse Voice Transcribe, SAM 3.1 (25% of the score).
+- [ ] **Uses Meta's models:** Muse Spark and Muse Voice Transcribe in the live call; SAM 3.1 tested (25% of the score). Don't claim SAM runs live.
 - [ ] **Credits:** used only for this project, under $75 so far. Re-read the **Credit Terms** from your Meta dashboard (Claude couldn't open the expired link).
 - [ ] **Video:** no secrets on screen, no copyrighted music, everyone shown has agreed.
 - [ ] **Code of conduct:** respectful in Discord and all event spaces.

@@ -44,7 +44,7 @@ export async function spark(instructions: string, text: string, deadlineMs = SPA
   return outputText(await res.json()).trim();
 }
 
-/** SAM 3.1 on one still frame. Returns SAM's raw text grammar; the client decodes it with @meta-sam/parser. */
+/** SAM 3.1 on one still hand crop. Returns SAM's raw text grammar. Speed-tested; not yet used in the live call. */
 export async function segment(imageDataUrl: string, prompt = "hand") {
   const res = await post(
     "/responses",

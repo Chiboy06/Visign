@@ -1,6 +1,6 @@
 # Visign: system architecture
 
-Status: **draft v2 for team review**. Nothing is built yet. Use it with PLAN.md, which covers what we build and when; this file covers how and why.
+Status: **design document written before the build.** Some parts here were planned, not built (e.g. SAM in the live loop, saving recordings to Supabase, the corrections flywheel, Sentry). What is built is described in README.md.
 
 Evidence labels used below:
 - **[official]**: from the vendor's own docs or pricing page, checked on Oct 29, 2026.

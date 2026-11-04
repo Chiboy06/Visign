@@ -46,7 +46,7 @@ export default function Home() {
       <footer className="mt-auto border-t border-ink/10">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-8 text-sm text-ink/70 sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <p>
-            Built on Meta Muse Spark, Muse Voice Transcribe and SAM 3.1. Hands are tracked on your device; video never
+            Built on Meta Muse Spark and Muse Voice Transcribe. Hands are tracked on your device; video never
             touches our server.
           </p>
           <nav className="flex gap-5" aria-label="Data tools">

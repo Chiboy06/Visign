@@ -24,8 +24,7 @@ flowchart LR
   subgraph Deaf["Deaf person"]
     CAM[Camera] --> MP[MediaPipe hand joints, on device]
     MP --> CL[Letter classifier, top-3]
-    CL -->|unsure| SAM[SAM 3.1 hand outline]
-    CL --> DEC[Muse Spark: letters to words]
+    CL --> DEC[Muse Spark: letters to a sentence, in the reader's language]
     AV[Avatar fingerspells]
   end
   GL -- LiveKit data channel --> AV
@@ -35,8 +34,8 @@ flowchart LR
 | Meta model | What it does in Visign |
 |---|---|
 | **Muse Voice Transcribe** | The hearing person's speech becomes text, one utterance at a time |
-| **Muse Spark 1.3** | Shortens speech to the fewest words worth fingerspelling (gloss), and turns noisy letter guesses into words using the conversation as context, and translates signed messages into the hearing person's language (Yoruba, Hausa, Igbo, Nigerian Pidgin, French) |
-| **SAM 3.1** | Outlines the hand to break ties between look-alike letters (M/N/S/T) and draws the on-screen hand outline |
+| **Muse Spark 1.3** | Turns speech (English or Nigerian Pidgin) into plain English for the deaf reader plus a short gloss for the avatar; and turns a signed sentence's letters, with the classifier's alternatives, into one natural sentence in the hearing person's language (English, Yoruba, Hausa, Igbo, Pidgin, French). One call per message. |
+| **SAM 3.1** | Speed-tested on hand crops (it found every hand), but **not yet in the live call**: 4–8 s per crop from Lagos is too slow for a live letter. Planned use: separating look-alike fist letters (A/S/E/M/N/T). |
 
 **Design rule:** recognition runs on the device, and the server only adds intelligence. If Meta's API is slow, down or over budget, Visign keeps working with on-device results. It never stalls a conversation.
 
@@ -49,7 +48,7 @@ flowchart LR
 | Hand tracking | MediaPipe Tasks Vision 1.1.1, Hand Landmarker (pinned, self-hosted) |
 | Calls | LiveKit (video and data channel, TURN relay included) |
 | Database | Supabase Postgres (RLS on every table; an atomic budget ledger) |
-| AI | Meta Model API: Muse Spark 1.3, SAM 3.1, Muse Voice Transcribe |
+| AI | Meta Model API: Muse Spark 1.3, Muse Voice Transcribe (SAM 3.1 tested, see above) |
 | Hosting | Vercel |
 | CI | GitHub Actions: lint, type check, tests, build |
 
@@ -141,9 +140,9 @@ All routes accept and return JSON (except `transcribe`, which takes a WAV body).
 
 | Route | Input | Output |
 |---|---|---|
-| `POST /api/gloss` | `{ text, context? }` | `{ gloss: ["WATER","YOU","WANT","?"] }` |
-| `POST /api/decode` | `{ letters: [[{letter,p}…]…], context? }` | `{ text }` |
-| `POST /api/segment` | `{ image: "data:image/jpeg;base64,…" }`, a hand crop ≤ 45 KB | `{ sam }` (raw SAM 3.1 output) |
+| `POST /api/gloss` | `{ text, context? }` | `{ english, gloss: ["YOU","WANT","WATER","?"] }` |
+| `POST /api/translate` | `{ text, to, spelled?, context? }` (`to`: en, yo, ha, ig, pcm, fr) | `{ text }`: one natural sentence |
+| `POST /api/segment` | `{ image: "data:image/jpeg;base64,…" }`, a hand crop ≤ 45 KB | `{ sam }` (raw SAM 3.1 output; not used by the call yet) |
 | `POST /api/transcribe` | mono 16-bit WAV, 16 or 24 kHz, ≤ 2 MB | `{ text }` |
 | `POST /api/token` | `{ room, role: "hearing" \| "deaf" }` | `{ token, url }` (LiveKit, 1 hour) |
 | `GET /api/health` | — | `{ ok: true }` |
