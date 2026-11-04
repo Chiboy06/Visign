@@ -7,6 +7,7 @@ export const SAM_CAP_USD = 60;
 // Official Meta prices (dev.meta.ai, Oct 2026).
 export const COST = {
   segment: 0.0025, // SAM 3.1, per image
+  vision: 0.01, // Muse Spark with one ~640 px photo; image tokens priced conservatively
   text: 0.004, // Muse Spark: up to ~840 output (mostly reasoning) tokens measured = ~$0.0038, so the cap holds
   transcribePerSecond: 3 / 1000 / 60, // $3 per 1,000 minutes
 };

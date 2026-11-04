@@ -21,6 +21,7 @@ Speech-to-text helps a deaf person read what is said, but when they sign back, n
 - **Muse Spark 1.3**, two jobs, one call per message each:
   1. **Speech → reader:** turns English or **Nigerian Pidgin** into plain English for the deaf reader, plus a short gloss of the words worth fingerspelling for the avatar.
   2. **Signing → listener:** receives every spelled letter **with the hand classifier's alternatives** and the recent conversation. It fixes look-alike handshapes (A/E/S/T/M/N), restores double letters, and writes **one natural sentence in the listener's language**. Example: Y-O-U · W-A-N-T · W-A-T-**S**-R becomes "Do you want water?".
+- **Muse Spark vision (for blind users):** the eye button takes one photo from your camera; Muse Spark describes it in 2-3 sentences (hazards first, then people, including anyone signing, then text) in the listener's language, read aloud. It stays on that device.
 - **SAM 3.1:** tested on hand crops (it found every hand). From Lagos it takes 4–8 s per crop, too slow for a live letter, so it's our next step for separating fist letters, not part of the live loop yet.
 
 ## How it works

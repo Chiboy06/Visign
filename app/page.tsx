@@ -17,12 +17,13 @@ const audiences = [
   { h: "Deaf and hard of hearing people", p: "Read what is said in plain English and watch it fingerspelled. Reply by signing, not typing." },
   { h: "Families, friends and coworkers", p: "Talk with a deaf person today, before you learn to sign. Pidgin is understood." },
   { h: "Clinics, schools and front desks", p: "A browser tab on any phone or laptop. Several people can join the same room." },
-  { h: "Blind and low-vision listeners", p: "Signed sentences are spoken aloud, so a blind and a deaf person can talk to each other." },
+  { h: "Blind and low-vision listeners", p: "Signed sentences are spoken aloud, and one tap describes what the camera sees, so a blind and a deaf person can talk." },
 ];
 
 const meta = [
   { h: "Muse Voice Transcribe", p: "Turns the hearing person’s speech into text, one utterance at a time." },
   { h: "Muse Spark", p: "Turns Pidgin into plain English, and spelled letters plus the conversation into one sentence in ten languages: English, Yorùbá, Hausa, Igbo, Pidgin, French, Spanish, Arabic, Chinese or Korean." },
+  { h: "Muse Spark vision", p: "“Describe what my camera sees”: one photo, described aloud for blind and low-vision people, hazards first." },
   { h: "SAM 3.1", p: "Tested for hand outlines; the next step for telling look-alike fist letters apart." },
 ];
 

@@ -116,7 +116,8 @@ Open http://localhost:3000.
 3. **Deaf:** sign letters to your camera and hold each one for about half a second. Lower your hand briefly to finish a word; the words gather as a sentence. Pause for 2.5 seconds (or tap **Send now**) to send it. Muse Spark fixes unclear letters in each word, then writes the words as one natural sentence for the hearing side ("YOU WANT WATER" → "Do you want water?").
 4. **Hearing:** pick the language signing reaches you in (English, Yorùbá, Hausa, Igbo, Naijá, Français, Español, العربية, 中文, 한국어), on the join screen or during the call; it's remembered on the device. Signed messages are translated by Muse Spark, shown with the original underneath, and read aloud by the browser's built-in voice when the device has one for that language.
 5. **Schedule for later** on the `/call` page: pick a time, get a room link, add it to Google Calendar or download an `.ics` file (Outlook, Apple). No account needed.
-6. Either side can **type** instead. This is the fallback if the mic, camera or network misbehaves.
+6. **Describe (eye button):** takes one photo from your camera and Muse Spark describes it aloud, for blind and low-vision people. Only you see or hear it.
+7. Either side can **type** instead. This is the fallback if the mic, camera or network misbehaves.
 
 **What it understands:** fingerspelling (one handshape per letter, plus J and Z motions), not full signs. Signs that move or depend on where the hand is relative to the face and body (WATER, THANK-YOU) are the next step; see the roadmap.
 
@@ -142,7 +143,8 @@ All routes accept and return JSON (except `transcribe`, which takes a WAV body).
 | Route | Input | Output |
 |---|---|---|
 | `POST /api/gloss` | `{ text, context? }` | `{ english, gloss: ["YOU","WANT","WATER","?"] }` |
-| `POST /api/translate` | `{ text, to, spelled?, context? }` (`to`: en, yo, ha, ig, pcm, fr) | `{ text }`: one natural sentence |
+| `POST /api/translate` | `{ text, to, spelled?, context? }` (`to`: en, yo, ha, ig, pcm, fr, es, ar, zh, ko) | `{ text }`: one natural sentence |
+| `POST /api/describe` | `{ image, lang? }` (JPEG/PNG/WebP data URL, max 400 KB) | `{ text }`: 2-3 sentences for a blind listener |
 | `POST /api/transcribe` | mono 16-bit WAV, 16 or 24 kHz, ≤ 2 MB | `{ text }` |
 | `POST /api/token` | `{ room, role: "hearing" \| "deaf" }` | `{ token, url }` (LiveKit, 1 hour) |
 | `GET /api/health` | — | `{ ok: true }` |

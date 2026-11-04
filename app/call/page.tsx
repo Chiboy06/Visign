@@ -17,7 +17,7 @@ import { Schedule } from "./Schedule";
 type Role = "hearing" | "deaf";
 // `translation`: what the reader sees (English for the deaf side, the chosen language for the hearing side).
 // `spelled`: the deaf side's letters with the classifier's alternatives, so Muse Spark can fix misreads.
-type Msg = { from: "me" | "them"; kind: "speech" | "sign"; text: string; gloss?: string[]; translation?: string; spelled?: Guess[][][]; who?: string };
+type Msg = { from: "me" | "them"; kind: "speech" | "sign" | "scene"; text: string; gloss?: string[]; translation?: string; spelled?: Guess[][][]; who?: string };
 // `who`: optional display name from the join screen. It travels in messages only, never in LiveKit identities (those get logged).
 
 const session = typeof crypto !== "undefined" ? crypto.randomUUID() : "server";
@@ -38,6 +38,7 @@ export default function CallPage() {
   const words = useRef<{ text: string; spelled: Guess[][] }[]>([]);
   const [talking, setTalking] = useState(false);
   const [typed, setTyped] = useState("");
+  const [describing, setDescribing] = useState(false);
   // Hearing side: the language signed messages are read and spoken in.
   const [lang, setLang] = useState<LanguageCode>("en");
   const [speakOut, setSpeakOut] = useState(true);
@@ -326,6 +327,36 @@ export default function CallPage() {
     else send({ kind: "sign", text });
   }
 
+  // "Describe what's around me" (for blind users): one still from your camera, described by Muse Spark and read aloud.
+  // Stays on this device: the description is never sent to the room.
+  async function describe() {
+    const v = local.current;
+    if (describing) return;
+    if (!camOn || !v?.videoWidth) return setStatus("Turn your camera on to describe what is around you.");
+    setDescribing(true);
+    setStatus("Looking…");
+    try {
+      const c = document.createElement("canvas");
+      c.width = 640;
+      c.height = Math.round((640 * v.videoHeight) / v.videoWidth);
+      c.getContext("2d")!.drawImage(v, 0, 0, c.width, c.height);
+      const { lang: to, speakOut: speak } = prefs.current;
+      const res = await fetch("/api/describe", {
+        method: "POST", headers, signal: AbortSignal.timeout(25_000),
+        body: JSON.stringify({ image: c.toDataURL("image/jpeg", 0.7), lang: role === "hearing" ? to : "en" }),
+      });
+      const { text } = await res.json();
+      if (!res.ok || !text) throw new Error();
+      setMessages((all) => [...all, { from: "me", kind: "scene", text }]);
+      setStatus("");
+      if (role === "hearing" && speak && !sayAloud(text, to)) setStatus(`No ${LANGUAGES[to].name} voice on this device: showing text only.`);
+    } catch {
+      setStatus("Could not describe the scene right now. Try again.");
+    } finally {
+      setDescribing(false);
+    }
+  }
+
   async function toggleCam() {
     const r = room.current;
     if (!r) return;
@@ -502,6 +533,14 @@ export default function CallPage() {
                 </button>
               )}
               <button
+                aria-label="Describe what my camera sees" title="Describe what my camera sees" onClick={describe} disabled={describing}
+                className="grid h-12 w-12 place-items-center rounded-full bg-white/15 hover:bg-white/25 disabled:animate-pulse"
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" />
+                </svg>
+              </button>
+              <button
                 aria-pressed={!camOn} aria-label={camOn ? "Turn camera off" : "Turn camera on"} onClick={toggleCam}
                 className={`grid h-12 w-12 place-items-center rounded-full ${camOn ? "bg-white/15 hover:bg-white/25" : "bg-cloth text-ink"}`}
               >
@@ -565,8 +604,8 @@ export default function CallPage() {
               )}
               {messages.map((m, i) => (
                 <li key={i} className={`max-w-[88%] ${m.from === "me" ? "self-end text-right" : "self-start"}`}>
-                  <span className="text-xs text-cloth/60">{m.from === "me" ? "You" : m.who ?? "They"} {m.kind === "speech" ? "spoke" : "signed"}</span>
-                  <p className={`mt-0.5 rounded-3xl px-4 py-2 text-left text-lg ${m.kind === "speech" ? "bg-vat text-cloth" : "bg-sun text-ink"}`}>
+                  <span className="text-xs text-cloth/60">{m.kind === "scene" ? "Your camera sees (only you)" : `${m.from === "me" ? "You" : m.who ?? "They"} ${m.kind === "speech" ? "spoke" : "signed"}`}</span>
+                  <p className={`mt-0.5 rounded-3xl px-4 py-2 text-left text-lg ${m.kind === "speech" ? "bg-vat text-cloth" : m.kind === "sign" ? "bg-sun text-ink" : "bg-cloth text-ink"}`}>
                     <span dir="auto" className="block">{m.translation ?? m.text}</span>
                     {m.translation && <span className="mt-1 block text-sm opacity-70">{m.text}</span>}
                   </p>

@@ -27,14 +27,14 @@ const outputText = (r: ResponsesOutput) =>
     .map((c) => c.text ?? "")
     .join("");
 
-/** Muse Spark 1.3, Standard mode (prompts are not used for training). */
-export async function spark(instructions: string, text: string, deadlineMs = SPARK_DEADLINE_MS) {
+/** Muse Spark 1.3, Standard mode (prompts are not used for training). `image`: optional data URL to look at. */
+export async function spark(instructions: string, text: string, deadlineMs = SPARK_DEADLINE_MS, image?: string) {
   const res = await post(
     "/responses",
     JSON.stringify({
       model: "muse-spark-1.3",
       instructions,
-      input: [{ role: "user", content: [{ type: "input_text", text }] }],
+      input: [{ role: "user", content: [{ type: "input_text", text }, ...(image ? [{ type: "input_image", image_url: image }] : [])] }],
       reasoning: { effort: "minimal" }, // "none" is rejected for Muse Spark (HTTP 400)
       store: false,
     }),
