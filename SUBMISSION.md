@@ -10,6 +10,48 @@ Copy-paste text for the Cerebral Valley form, plus the demo script. Fill in the 
 
 ---
 
+## Form answers (in form order)
+
+**Problem statement:** Build for the World.
+
+**Most Viral track X post:** leave empty (not competing).
+
+**Product description:** paste "Short description" below.
+
+**Public GitHub repo:** https://github.com/Chiboy06/Visign
+
+**3-minute demo video:** YouTube link (Public or Unlisted; check it plays in a private window).
+
+**Describe your use of Meta's models:** paste "How we used Meta's AI" below.
+
+**Why are Meta's models important to your solution?**
+Fingerspelling recognition alone gives noisy letters: look-alike handshapes, dropped doubles, no grammar. Muse Spark turns those letters, with the classifier's alternatives and the conversation so far, into the sentence the signer meant, in the listener's language. It also turns Nigerian Pidgin into plain English for deaf readers, who often learn signed and written English rather than Pidgin. Muse Voice Transcribe gives the hearing side a hands-free way in, and Muse Spark vision describes the scene for blind users. Without these models, Visign would be a letter display; with them, it is a conversation.
+
+**Feedback on partner technologies:** None used. (LiveKit, Supabase and Vercel are infrastructure we chose ourselves; only mention them if they are on the partner list.)
+
+**How likely are you to build with the Meta Model API?** Very likely.
+
+**Overall opinion of the Meta Model API:**
+The Responses API was easy to call with plain fetch, and Muse Spark followed strict output formats (JSON only, one sentence only) reliably. Pidgin to English and the Yorùbá, Hausa, Igbo, Arabic, Chinese and Korean output were good. Muse Voice Transcribe was accurate for English push-to-talk. What held us back: latency from Lagos (Spark 2.8–16 s, SAM 4–8 s per image), "reasoning.effort: none" returning HTTP 400, no Yorùbá, Hausa or Igbo speech recognition yet, and the realtime transcription WebSocket needing the API key in the browser, so we could not use live captions safely. Short-lived client tokens would fix that.
+
+**Permission grant (Meta and Cerebral Valley may use and publish the submission):** read it yourself, then accept. It is required to submit.
+
+**Recommend the Meta Model API to another developer (0–5):** 4.
+
+**Recommend Muse Code to another developer:** we did not use Muse Code. Pick "N/A" or the lowest-commitment option if there is no N/A; do not rate a tool we did not use.
+
+**Biggest obstacle:** Slow responses. (Also true, if it allows more than one: the model capability we needed was missing (Yorùbá, Hausa and Igbo speech recognition; browser-safe realtime transcription), and errors ("effort: none" rejected).)
+
+**Compared with other AI models for the same work:** About the same. Quality matched what we expected; latency from Nigeria was the weak point.
+
+**What matters most when choosing a model:** Quality of answers, speed, price, reliability and uptime, data privacy and terms of use.
+
+**What makes switching harder:** Prompts tuned and tested on one model's behaviour. (Our client is a thin fetch wrapper, so code is not the lock-in; pick "nothing, it's easy to switch" if offered and you prefer.)
+
+**What would most likely stop you using Meta's models in production:** Speed (latency from Africa, no nearby region), then missing capabilities: Yorùbá, Hausa and Igbo speech recognition, and short-lived tokens for realtime transcription in the browser.
+
+---
+
 ## One-line description
 A live two-way video call between a hearing and a deaf person: speech becomes captions and a fingerspelling avatar, and fingerspelling becomes a natural sentence, read aloud in the listener's language.
 
