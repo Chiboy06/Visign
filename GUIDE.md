@@ -119,7 +119,7 @@ Done once, on the laptop that has the code, after collecting everyone's files.
 ### Test A: the letters, alone (5 minutes)
 1. Open `/call`, choose **I sign**, click **Join call**. It's fine that nobody else is there.
 2. Sign a letter and hold it still for half a second. **An ochre tile with the letter should appear.**
-3. Spell a short word (e.g. **H-I**), then **lower your hand** to send it.
+3. Spell a short word (e.g. **H-I**), then **lower your hand briefly** to finish it. Spell another, then pause for **3 seconds** (or tap **Send now**) to send the whole sentence.
 4. Write down letters that come out wrong; those are the ones to record more of.
 
 ### Test B: the full call, two devices (15 minutes)
@@ -156,7 +156,7 @@ Judges score the demo at **25%**: "a working, impressive demo, whether the produ
 ### Script (about 2.5 minutes)
 1. **The problem (0:00–0:20).** A person on camera: "Speech-to-text helps a deaf person read what's said. But when they sign back, nobody understands. Visign translates both ways."
 2. **Hearing → deaf (0:20–1:00).** Split screen. The hearing person holds the button: "Hi, would you like some water?" Show the phone: the caption appears, then the avatar fingerspells WATER.
-3. **Deaf → hearing (1:00–1:40).** The deaf signer spells **Y-E-S** (practise a word that recognizes reliably first). Show the ochre letter tiles, then the laptop receiving "YES". Then switch the laptop's **Read and hear signing in** to **Yoruba** (or Pidgin), sign again, and show the translation appear with the English underneath. Ask a native speaker to check it before recording.
+3. **Deaf → hearing (1:00–1:40).** The deaf signer spells **Y-E-S**, or a short group like **YOU · WANT · WATER** that the hearing side receives as "Do you want water?" (practise words that recognize reliably first). Show the ochre letter tiles, then the laptop receiving "YES". Then switch the laptop's **Read and hear signing in** to **Yoruba** (or Pidgin), sign again, and show the translation appear with the English underneath. Ask a native speaker to check it before recording.
 4. **How Meta's AI does it (1:40–2:15)**, with on-screen labels:
    - **Muse Voice Transcribe** turns speech into text.
    - **Muse Spark** shortens speech to the words worth signing, and fixes unclear letters using the conversation ("H-E-L-O" becomes "HELLO"), and translates signed messages into Yoruba, Hausa, Igbo, Pidgin or French.

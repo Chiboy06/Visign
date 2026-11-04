@@ -114,8 +114,8 @@ Open http://localhost:3000.
 
 1. Open `/call`, choose **Hearing** or **Deaf**, and join. Send the other person the share link (it opens with the other role).
 2. **Hearing:** hold **Hold to speak** (or Space), talk, and release. Muse Voice Transcribe turns it into text, Muse Spark shortens it to gloss, and the deaf side sees captions plus the avatar fingerspelling it.
-3. **Deaf:** sign letters to your camera and hold each one for about half a second. Lower your hand to finish a word. Muse Spark decodes the letters using the conversation, and the hearing side reads the result.
-4. **Hearing:** pick **Read and hear signing in** (English, Yoruba, Hausa, Igbo, Nigerian Pidgin, French). Signed messages are translated by Muse Spark, shown with the original underneath, and read aloud by the browser's built-in voice when the device has one for that language.
+3. **Deaf:** sign letters to your camera and hold each one for about half a second. Lower your hand briefly to finish a word; the words gather as a sentence. Pause for 3 seconds (or tap **Send now**) to send it. Muse Spark fixes unclear letters in each word, then writes the words as one natural sentence for the hearing side ("YOU WANT WATER" → "Do you want water?").
+4. **Hearing:** pick the language signing reaches you in (English, Yorùbá, Hausa, Igbo, Naijá, Français), on the join screen or during the call; it's remembered on the device. Signed messages are translated by Muse Spark, shown with the original underneath, and read aloud by the browser's built-in voice when the device has one for that language.
 5. Either side can **type** instead. This is the fallback if the mic, camera or network misbehaves.
 
 **What it understands:** fingerspelling (one handshape per letter, plus J and Z motions), not full signs. Signs that move or depend on where the hand is relative to the face and body (WATER, THANK-YOU) are the next step; see the roadmap.

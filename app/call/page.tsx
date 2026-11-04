@@ -11,6 +11,7 @@ import { createSpeller } from "@/lib/speller";
 import { encodeWav, resample } from "@/lib/wavEncode";
 import { isLanguage, LANGUAGES, type LanguageCode } from "@/lib/languages";
 import { Avatar } from "./Avatar";
+import { LanguagePicker } from "./LanguagePicker";
 
 type Role = "hearing" | "deaf";
 type Msg = { from: "me" | "them"; kind: "speech" | "sign"; text: string; gloss?: string[]; translation?: string };
@@ -27,6 +28,10 @@ export default function CallPage() {
   const [status, setStatus] = useState("");
   const [messages, setMessages] = useState<Msg[]>([]);
   const [letters, setLetters] = useState<Guess[][]>([]);
+  // Deaf side: decoded words waiting to go out as one sentence.
+  const [sentence, setSentence] = useState<string[]>([]);
+  const words = useRef<string[]>([]);
+  const decoding = useRef<Promise<void>>(Promise.resolve());
   const [talking, setTalking] = useState(false);
   const [typed, setTyped] = useState("");
   // Hearing side: the language signed messages are read and spoken in.
@@ -34,6 +39,25 @@ export default function CallPage() {
   const [speakOut, setSpeakOut] = useState(true);
   const prefs = useRef({ lang, speakOut });
   prefs.current = { lang, speakOut };
+  // Remember the language on this device (per-viewer convenience; storage can be blocked, so never required).
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("visign.prefs") ?? "{}");
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- storage is only readable after mount
+      if (isLanguage(saved.lang)) setLang(saved.lang);
+      if (typeof saved.speakOut === "boolean") setSpeakOut(saved.speakOut);
+    } catch {}
+  }, []);
+  // Saved only when the person changes a setting: an effect here would overwrite the saved choice on load.
+  function savePrefs(next: { lang: LanguageCode; speakOut: boolean }) {
+    setLang(next.lang);
+    setSpeakOut(next.speakOut);
+    try {
+      localStorage.setItem("visign.prefs", JSON.stringify(next));
+    } catch {}
+  }
+  const pickLang = (l: LanguageCode) => savePrefs({ lang: l, speakOut });
+  const pickSpeak = (on: boolean) => savePrefs({ lang, speakOut: on });
   const [gloss, setGloss] = useState<{ id: number; tokens: string[] } | null>(null);
   const [poses, setPoses] = useState<Record<string, Point[]>>({});
 
@@ -128,26 +152,25 @@ export default function CallPage() {
     }
   }
 
-  // Hearing side: translate a signed message with Muse Spark if needed, then read it aloud.
+  // Hearing side: Muse Spark turns the signed words into a sentence in the chosen language, then it's read aloud.
   async function readOut(m: Msg) {
     const { lang: to, speakOut: speak } = prefs.current;
     let text = m.text;
-    if (to !== "en") {
-      try {
-        const res = await fetch("/api/translate", { method: "POST", headers, body: JSON.stringify({ text: m.text, to }) });
-        const out = (await res.json()).text;
-        if (out && out !== m.text) {
-          text = out;
-          setMessages((all) => all.map((x) => (x === m ? { ...x, translation: out } : x)));
-        }
-      } catch {} // the original English stays on screen
-    }
+    // Always ask Muse Spark: it also turns spelled words ("YOU WANT WATER") into a sentence in English.
+    try {
+      const res = await fetch("/api/translate", { method: "POST", headers, body: JSON.stringify({ text: m.text, to }) });
+      const out = (await res.json()).text;
+      if (out && out.toLowerCase() !== m.text.toLowerCase()) {
+        text = out;
+        setMessages((all) => all.map((x) => (x === m ? { ...x, translation: out } : x)));
+      }
+    } catch {} // the spelled words stay on screen
     if (speak && !sayAloud(text, to)) setStatus(`No ${LANGUAGES[to].name} voice on this device: showing text only.`);
   }
 
   useEffect(() => () => void room.current?.disconnect(), []);
 
-  // Deaf side: read signs from the local camera, commit held letters, decode each finished word.
+  // Deaf side: read signs from the local camera, commit held letters, decode each word, send the sentence after a pause.
   useEffect(() => {
     if (!joined || role !== "deaf") return;
     let frame = 0, stopped = false;
@@ -166,6 +189,7 @@ export default function CallPage() {
             setLetters([]);
             decodeWord(ev.word);
           }
+          if (ev.sentenceEnd) void sendSentence();
         }
         frame = requestAnimationFrame(tick);
       };
@@ -178,15 +202,32 @@ export default function CallPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the loop must not restart on every render
   }, [joined, role]);
 
-  async function decodeWord(word: Guess[][]) {
+  // Words decode one after another (in signing order) and wait in `words` until the sentence is sent.
+  function decodeWord(word: Guess[][]) {
     const raw = word.map((pos) => pos[0].letter).join("");
-    try {
-      const res = await fetch("/api/decode", { method: "POST", headers, body: JSON.stringify({ letters: word, context: recent.current }) });
-      const { text } = await res.json();
-      send({ kind: "sign", text: text || raw });
-    } catch {
-      send({ kind: "sign", text: raw });
-    }
+    decoding.current = decoding.current.then(async () => {
+      let text = raw;
+      try {
+        const res = await fetch("/api/decode", { method: "POST", headers, body: JSON.stringify({ letters: word, context: recent.current }) });
+        text = (await res.json()).text || raw;
+      } catch {} // keep the letters as signed
+      words.current = [...words.current, text];
+      setSentence(words.current);
+    });
+  }
+
+  async function sendSentence() {
+    await decoding.current; // include words still being decoded
+    if (!words.current.length) return;
+    send({ kind: "sign", text: words.current.join(" ") });
+    words.current = [];
+    setSentence([]);
+  }
+
+  function clearSentence() {
+    words.current = [];
+    setSentence([]);
+    setLetters([]);
   }
 
   // Hearing side: push-to-talk records one utterance as 16 kHz WAV for Muse Voice Transcribe.
@@ -290,6 +331,12 @@ export default function CallPage() {
             </div>
           </fieldset>
 
+          {role === "hearing" && (
+            <div className="mt-6">
+              <LanguagePicker lang={lang} onLang={pickLang} speak={speakOut} onSpeak={pickSpeak} />
+            </div>
+          )}
+
           <label className="mt-8 block font-display text-xl font-bold" htmlFor="room">Room code</label>
           <input
             id="room" className="mt-2 w-full rounded-2xl border-2 border-ink/15 bg-white px-4 py-3 text-xl tracking-wider"
@@ -344,6 +391,26 @@ export default function CallPage() {
         </div>
 
         {role === "deaf" && (
+          <section aria-label="Your sentence" className="flex flex-wrap items-center gap-2 rounded-[2rem] bg-white p-3">
+            {sentence.length ? (
+              sentence.map((w, i) => (
+                <span key={i} className="rounded-full bg-sun/25 px-4 py-1.5 font-display text-xl font-bold">{w}</span>
+              ))
+            ) : (
+              <p className="px-2 text-ink/60">Words you spell gather here. Pause for 3 seconds to send them as one sentence.</p>
+            )}
+            <span className="ml-auto flex gap-2">
+              <button className="rounded-full border-2 border-ink/15 px-4 py-2 font-bold disabled:opacity-40" onClick={clearSentence} disabled={!sentence.length && !letters.length}>
+                Clear
+              </button>
+              <button className="rounded-full bg-ink px-5 py-2 font-display font-bold text-cloth disabled:opacity-40" onClick={() => void sendSentence()} disabled={!sentence.length}>
+                Send now
+              </button>
+            </span>
+          </section>
+        )}
+
+        {role === "deaf" && (
           <section aria-label="Letters you are signing" aria-live="polite" className="flex min-h-20 flex-wrap items-center gap-2">
             {letters.length ? (
               letters.map((pos, i) => (
@@ -352,7 +419,7 @@ export default function CallPage() {
                 </span>
               ))
             ) : (
-              <p className="text-lg text-ink/60">Sign a letter and hold it still. Lower your hand to send the word.</p>
+              <p className="text-lg text-ink/60">Sign a letter and hold it still. Lower your hand briefly to finish a word.</p>
             )}
           </section>
         )}
@@ -374,23 +441,7 @@ export default function CallPage() {
           ))}
         </ol>
 
-        {role === "hearing" && (
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-            <label className="flex items-center gap-2 font-display font-bold">
-              Read and hear signing in
-              <select
-                className="rounded-full border-2 border-ink/15 bg-white px-3 py-1.5 font-sans font-normal"
-                value={lang} onChange={(e) => isLanguage(e.target.value) && setLang(e.target.value)}
-              >
-                {Object.entries(LANGUAGES).map(([code, l]) => <option key={code} value={code}>{l.name}</option>)}
-              </select>
-            </label>
-            <label className="flex items-center gap-2">
-              <input type="checkbox" className="h-5 w-5 accent-vat" checked={speakOut} onChange={(e) => setSpeakOut(e.target.checked)} />
-              Speak signed messages aloud
-            </label>
-          </div>
-        )}
+        {role === "hearing" && <LanguagePicker lang={lang} onLang={pickLang} speak={speakOut} onSpeak={pickSpeak} />}
 
         <div className="flex items-center gap-3">
           {role === "hearing" && (

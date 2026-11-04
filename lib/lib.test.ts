@@ -4,7 +4,7 @@ import { test } from "node:test";
 import { capFor, COST, HARD_CAP_USD, SAM_CAP_USD, transcribeCost } from "./budget.ts";
 import { classify, features } from "./classify.ts";
 import { countByLabel, labelFromPath, sourceKey, toPoints } from "./dataset.ts";
-import { createSpeller, GAP_MS, HOLD_MS } from "./speller.ts";
+import { createSpeller, GAP_MS, HOLD_MS, SENTENCE_GAP_MS } from "./speller.ts";
 import { encodeWav, resample } from "./wavEncode.ts";
 import { localGloss, parseGloss, reordersLetters } from "./gloss.ts";
 import { wavInfo } from "./wav.ts";
@@ -140,7 +140,8 @@ test("speller commits a held letter once and ends the word after a gap", () => {
   assert.deepEqual(push(2 * HOLD_MS + 400, null), {});
   const end = push(2 * HOLD_MS + 300 + GAP_MS, null);
   assert.deepEqual(end.word?.map((pos) => pos[0].letter), ["H", "I"]);
-  assert.deepEqual(push(9999, null), {}); // nothing pending
+  assert.deepEqual(push(9999, null), { sentenceEnd: true }); // a long pause closes the sentence
+  assert.deepEqual(push(19999, null), {}); // nothing pending after that
 });
 
 test("encodeWav output passes the server's WAV validation", () => {
@@ -192,4 +193,22 @@ test("isLanguage accepts only the supported translation targets", async () => {
   const { isLanguage } = await import("./languages.ts");
   for (const ok of ["en", "yo", "ha", "ig", "pcm", "fr"]) assert.equal(isLanguage(ok), true, ok);
   for (const bad of ["xx", "", "toString", "__proto__", 3, null]) assert.equal(isLanguage(bad), false, String(bad));
+});
+
+test("speller groups words into a sentence that ends after a longer pause", () => {
+  const push = createSpeller();
+  const hold = (t: number, letter: string) => { push(t, [{ letter, p: 0.9 }]); return push(t + HOLD_MS, [{ letter, p: 0.9 }]); };
+  let t = 0;
+  const events: string[] = [];
+  const log = (e: ReturnType<typeof push>) => { if (e.word) events.push("word:" + e.word.map((p) => p[0].letter).join("")); if (e.sentenceEnd) events.push("end"); };
+  hold(t, "N"); t += HOLD_MS + 50;
+  hold(t, "O"); t += HOLD_MS;
+  log(push(t + 100, null)); log(push(t + GAP_MS, null)); // word NO finished
+  t += GAP_MS + 400;
+  hold(t, "Y"); t += HOLD_MS; // hand back up within the sentence gap: same sentence
+  log(push(t + GAP_MS, null)); // word Y
+  log(push(t + GAP_MS + 500, null)); // not yet a sentence end
+  log(push(t + SENTENCE_GAP_MS, null)); // sentence ends
+  log(push(t + SENTENCE_GAP_MS + 5000, null)); // and only once
+  assert.deepEqual(events, ["word:NO", "word:Y", "end"]);
 });

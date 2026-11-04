@@ -3,8 +3,9 @@ import type { Guess } from "./classify";
 export const HOLD_MS = 500; // a letter counts once its handshape is held this long
 export const GAP_MS = 1200; // no hand for this long ends the word
 export const MIN_P = 0.45; // below this the classifier is unsure: don't commit
+export const SENTENCE_GAP_MS = 3000; // no hand for this long after a word ends the sentence
 
-export type SpellEvent = { letter?: Guess[]; word?: Guess[][] };
+export type SpellEvent = { letter?: Guess[]; word?: Guess[][]; sentenceEnd?: true };
 
 /**
  * Turns per-frame classifier guesses into committed letters and finished words.
@@ -19,6 +20,7 @@ export function createSpeller() {
   let lastCommitted: string | null = null;
   let lastHand = 0;
   let word: Guess[][] = [];
+  let sentenceOpen = false; // a word was finished and the sentence hasn't been closed yet
 
   return function push(t: number, top: Guess[] | null): SpellEvent {
     if (!top || top.length === 0) {
@@ -28,7 +30,12 @@ export function createSpeller() {
       if (word.length > 0 && t - lastHand >= GAP_MS) {
         const done = word;
         word = [];
+        sentenceOpen = true;
         return { word: done };
+      }
+      if (sentenceOpen && word.length === 0 && t - lastHand >= SENTENCE_GAP_MS) {
+        sentenceOpen = false;
+        return { sentenceEnd: true };
       }
       return {};
     }
