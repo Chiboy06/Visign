@@ -9,10 +9,11 @@ import { loadPoses } from "@/lib/handArt";
 import { handLandmarker } from "@/lib/hands";
 import { createSpeller } from "@/lib/speller";
 import { encodeWav, resample } from "@/lib/wavEncode";
+import { isLanguage, LANGUAGES, type LanguageCode } from "@/lib/languages";
 import { Avatar } from "./Avatar";
 
 type Role = "hearing" | "deaf";
-type Msg = { from: "me" | "them"; kind: "speech" | "sign"; text: string; gloss?: string[] };
+type Msg = { from: "me" | "them"; kind: "speech" | "sign"; text: string; gloss?: string[]; translation?: string };
 
 const session = typeof crypto !== "undefined" ? crypto.randomUUID() : "server";
 const headers = { "Content-Type": "application/json", "x-session-id": session };
@@ -28,6 +29,11 @@ export default function CallPage() {
   const [letters, setLetters] = useState<Guess[][]>([]);
   const [talking, setTalking] = useState(false);
   const [typed, setTyped] = useState("");
+  // Hearing side: the language signed messages are read and spoken in.
+  const [lang, setLang] = useState<LanguageCode>("en");
+  const [speakOut, setSpeakOut] = useState(true);
+  const prefs = useRef({ lang, speakOut });
+  prefs.current = { lang, speakOut };
   const [gloss, setGloss] = useState<{ id: number; tokens: string[] } | null>(null);
   const [poses, setPoses] = useState<Record<string, Point[]>>({});
 
@@ -92,7 +98,9 @@ export default function CallPage() {
         // Only the other role talks to us; another tab of ours must not echo our own words back.
         if (participant?.identity.startsWith(`${role}-`)) return;
         try {
-          addMessage({ ...JSON.parse(new TextDecoder().decode(payload)), from: "them" });
+          const m: Msg = { ...JSON.parse(new TextDecoder().decode(payload)), from: "them" };
+          addMessage(m);
+          if (m.kind === "sign") void readOut(m);
         } catch {} // ignore malformed messages from the other side
       });
       r.on(RoomEvent.ParticipantConnected, () => setStatus("The other person joined."));
@@ -118,6 +126,23 @@ export default function CallPage() {
     } finally {
       setConnecting(false);
     }
+  }
+
+  // Hearing side: translate a signed message with Muse Spark if needed, then read it aloud.
+  async function readOut(m: Msg) {
+    const { lang: to, speakOut: speak } = prefs.current;
+    let text = m.text;
+    if (to !== "en") {
+      try {
+        const res = await fetch("/api/translate", { method: "POST", headers, body: JSON.stringify({ text: m.text, to }) });
+        const out = (await res.json()).text;
+        if (out && out !== m.text) {
+          text = out;
+          setMessages((all) => all.map((x) => (x === m ? { ...x, translation: out } : x)));
+        }
+      } catch {} // the original English stays on screen
+    }
+    if (speak && !sayAloud(text, to)) setStatus(`No ${LANGUAGES[to].name} voice on this device: showing text only.`);
   }
 
   useEffect(() => () => void room.current?.disconnect(), []);
@@ -341,10 +366,31 @@ export default function CallPage() {
           {messages.map((m, i) => (
             <li key={i} className={`max-w-[85%] ${m.from === "me" ? "self-end text-right" : "self-start"}`}>
               <span className="text-xs text-ink/60">{m.from === "me" ? "You" : "They"} {m.kind === "speech" ? "spoke" : "signed"}</span>
-              <p className={`mt-0.5 rounded-3xl px-4 py-2 text-lg ${m.kind === "speech" ? "bg-vat text-cloth" : "bg-sun text-ink"}`}>{m.text}</p>
+              <p className={`mt-0.5 rounded-3xl px-4 py-2 text-lg ${m.kind === "speech" ? "bg-vat text-cloth" : "bg-sun text-ink"}`}>
+                {m.translation ?? m.text}
+                {m.translation && <span className="mt-1 block text-sm opacity-70">{m.text}</span>}
+              </p>
             </li>
           ))}
         </ol>
+
+        {role === "hearing" && (
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <label className="flex items-center gap-2 font-display font-bold">
+              Read and hear signing in
+              <select
+                className="rounded-full border-2 border-ink/15 bg-white px-3 py-1.5 font-sans font-normal"
+                value={lang} onChange={(e) => isLanguage(e.target.value) && setLang(e.target.value)}
+              >
+                {Object.entries(LANGUAGES).map(([code, l]) => <option key={code} value={code}>{l.name}</option>)}
+              </select>
+            </label>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" className="h-5 w-5 accent-vat" checked={speakOut} onChange={(e) => setSpeakOut(e.target.checked)} />
+              Speak signed messages aloud
+            </label>
+          </div>
+        )}
 
         <div className="flex items-center gap-3">
           {role === "hearing" && (
@@ -369,4 +415,17 @@ export default function CallPage() {
       </div>
     </main>
   );
+}
+
+/** Speaks text with a browser voice for the language. Returns false when the device has no such voice. */
+function sayAloud(text: string, lang: LanguageCode): boolean {
+  if (!("speechSynthesis" in window)) return false;
+  const tag = LANGUAGES[lang].voice;
+  const voice = speechSynthesis.getVoices().find((v) => v.lang.toLowerCase().startsWith(tag));
+  if (!voice && tag !== "en") return false; // never read Yoruba with an English voice: it would be unintelligible
+  const u = new SpeechSynthesisUtterance(text);
+  if (voice) u.voice = voice;
+  u.lang = voice?.lang ?? "en-NG";
+  speechSynthesis.speak(u);
+  return true;
 }

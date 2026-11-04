@@ -35,7 +35,7 @@ flowchart LR
 | Meta model | What it does in Visign |
 |---|---|
 | **Muse Voice Transcribe** | The hearing person's speech becomes text, one utterance at a time |
-| **Muse Spark 1.3** | Shortens speech to the fewest words worth fingerspelling (gloss), and turns noisy letter guesses into words using the conversation as context |
+| **Muse Spark 1.3** | Shortens speech to the fewest words worth fingerspelling (gloss), and turns noisy letter guesses into words using the conversation as context, and translates signed messages into the hearing person's language (Yoruba, Hausa, Igbo, Nigerian Pidgin, French) |
 | **SAM 3.1** | Outlines the hand to break ties between look-alike letters (M/N/S/T) and draws the on-screen hand outline |
 
 **Design rule:** recognition runs on the device, and the server only adds intelligence. If Meta's API is slow, down or over budget, Visign keeps working with on-device results. It never stalls a conversation.
@@ -104,11 +104,9 @@ Open http://localhost:3000.
 | `npm run build` / `npm start` | Production build / serve |
 | `npm test` | Unit tests (Node's built-in test runner) |
 | `npm run lint` · `npm run typecheck` | ESLint · TypeScript |
-| `npm run model` | Rebuilds `public/model/letters.json` from `data/raw/asl-now` and `data/landmarks/*.json`, and prints held-out accuracy |
-| `npm run train:asl-mnist` | Trains a separate image CNN from Voxel51 ASL-MNIST; writes an ONNX model and official test metrics under `public/model/` |
+| `npm run model` | Rebuilds `public/model/letters.json` from `data/landmarks/*.json`, and prints held-out and new-person accuracy |
 | `npm run latency -- scripts/fixtures/hand-crop.jpg` | Times Meta API calls from your machine (about $0.02) |
 
-For ASL-MNIST training, install the Python dependencies once with `python3 -m pip install -r requirements-aslmnist.txt`.
 
 ---
 
@@ -117,11 +115,13 @@ For ASL-MNIST training, install the Python dependencies once with `python3 -m pi
 1. Open `/call`, choose **Hearing** or **Deaf**, and join. Send the other person the share link (it opens with the other role).
 2. **Hearing:** hold **Hold to speak** (or Space), talk, and release. Muse Voice Transcribe turns it into text, Muse Spark shortens it to gloss, and the deaf side sees captions plus the avatar fingerspelling it.
 3. **Deaf:** sign letters to your camera and hold each one for about half a second. Lower your hand to finish a word. Muse Spark decodes the letters using the conversation, and the hearing side reads the result.
-4. Either side can **type** instead. This is the fallback if the mic, camera or network misbehaves.
+4. **Hearing:** pick **Read and hear signing in** (English, Yoruba, Hausa, Igbo, Nigerian Pidgin, French). Signed messages are translated by Muse Spark, shown with the original underneath, and read aloud by the browser's built-in voice when the device has one for that language.
+5. Either side can **type** instead. This is the fallback if the mic, camera or network misbehaves.
+
+**What it understands:** fingerspelling (one handshape per letter, plus J and Z motions), not full signs. Signs that move or depend on where the hand is relative to the face and body (WATER, THANK-YOU) are the next step; see the roadmap.
 
 **Landmark letter classifier:** k-nearest-neighbours on hand-shape features that ignore position, size and which hand is used. The current generated model combines 2,122 ASL baseline samples and 483 NSL photo landmarks. Its held-out sample score is **95.8% top-1 and 99.0% top-3**. This is optimistic because the split does not hold out signers; collect recorder data with signer IDs for the new-person test.
 
-**Voxel51 ASL-MNIST image classifier:** `npm run train:asl-mnist` trains a separate CNN on the dataset's 28×28 grayscale images and official train/test split. It recovers the correct letter labels from the FiftyOne `samples.json` annotations; do not use the auto-generated Parquet `label` column. The dataset covers 24 static ASL letters and excludes J and Z. The trained run reached **93.1% top-1 and 97.8% top-3 on the official 7,172-image test split**. The model is exported as ONNX with a PyTorch checkpoint and test metrics. It is a separate experimental image model; the live `/call` page still uses the landmark classifier because these pixels are not 21-point hand landmarks.
 
 ## Data tools
 

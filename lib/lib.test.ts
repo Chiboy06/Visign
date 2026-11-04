@@ -187,3 +187,9 @@ test("reordersLetters catches rearranged letters but allows real fixes", () => {
   assert.equal(reordersLetters("WOLD", "WOLF"), false); // one-letter swap: allowed
   assert.equal(reordersLetters("CTA", "cat"), true);
 });
+
+test("isLanguage accepts only the supported translation targets", async () => {
+  const { isLanguage } = await import("./languages.ts");
+  for (const ok of ["en", "yo", "ha", "ig", "pcm", "fr"]) assert.equal(isLanguage(ok), true, ok);
+  for (const bad of ["xx", "", "toString", "__proto__", 3, null]) assert.equal(isLanguage(bad), false, String(bad));
+});

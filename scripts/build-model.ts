@@ -1,22 +1,12 @@
-// Builds public/model/letters.json from ASLNow (data/raw/asl-now) and any converter/recorder exports
-// dropped in data/landmarks/*.json, and reports accuracy on a held-out 20%.
+// Builds public/model/letters.json from every export in data/landmarks/*.json (the ASL baseline, the NSL photos,
+// and team recordings), and reports accuracy on a held-out 20%.
 // Run: npm run model
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { classify, features } from "../lib/classify.ts";
-import { ASLNOW_ASPECT, countByLabel, fitToBox, toPoints, type Sample } from "../lib/dataset.ts";
+import { countByLabel, fitToBox, toPoints, type Sample } from "../lib/dataset.ts";
 
 const samples: Sample[] = [];
-
-const ASLNOW = "data/raw/asl-now";
-if (existsSync(ASLNOW)) {
-  for (const label of readdirSync(ASLNOW).filter((d) => /^[A-Z]$/.test(d))) {
-    for (const file of readdirSync(join(ASLNOW, label))) {
-      const points = toPoints(JSON.parse(readFileSync(join(ASLNOW, label, file), "utf8")));
-      if (points) samples.push({ lang: "asl", label, source: "aslnow", aspect: ASLNOW_ASPECT, points });
-    }
-  }
-}
 
 const EXPORTS = "data/landmarks";
 if (existsSync(EXPORTS)) {
@@ -28,7 +18,7 @@ if (existsSync(EXPORTS)) {
     }
   }
 }
-if (samples.length === 0) throw new Error("No data: clone ASLNow into data/raw/asl-now or add exports to data/landmarks/");
+if (samples.length === 0) throw new Error("No data: add exports to data/landmarks/ (see GUIDE.md)");
 
 const feats = samples.map((s) => features(s.points, s.aspect));
 

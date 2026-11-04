@@ -34,7 +34,10 @@ If time runs short, **cut recording, never the video.** The demo video is 25% of
 **Known limits (say these honestly in the video if asked):**
 - It recognizes **fingerspelled letters**, not full signed sentences. No usable public dataset of signed sentences exists for NSL, and the ASL ones are research-only licenses we can't use (see Section 9).
 - Word signs (HELLO, THANK-YOU…) are fingerspelled by the avatar for now.
-- Each spoken message takes about 6 seconds, mostly network time from Lagos to Meta's servers.
+- Each spoken message takes about 6 seconds, mostly network time from Lagos to Meta's servers. Translations take another 5–12 s.
+- It understands **fingerspelling only**, not full signs (WATER, THANK-YOU…). In the video, say "fingerspelling".
+- Speech input is in English (Meta's transcription doesn't support Yoruba, Hausa or Igbo yet). Translation applies to what the hearing person reads and hears.
+- Reading aloud uses the device's own voices. Most phones and laptops have English and French, but rarely Yoruba, Hausa or Igbo; then the text is shown without audio.
 
 ---
 
@@ -153,10 +156,10 @@ Judges score the demo at **25%**: "a working, impressive demo, whether the produ
 ### Script (about 2.5 minutes)
 1. **The problem (0:00–0:20).** A person on camera: "Speech-to-text helps a deaf person read what's said. But when they sign back, nobody understands. Visign translates both ways."
 2. **Hearing → deaf (0:20–1:00).** Split screen. The hearing person holds the button: "Hi, would you like some water?" Show the phone: the caption appears, then the avatar fingerspells WATER.
-3. **Deaf → hearing (1:00–1:40).** The deaf signer spells **Y-E-S** (practise a word that recognizes reliably first). Show the ochre letter tiles, then the laptop receiving "YES".
+3. **Deaf → hearing (1:00–1:40).** The deaf signer spells **Y-E-S** (practise a word that recognizes reliably first). Show the ochre letter tiles, then the laptop receiving "YES". Then switch the laptop's **Read and hear signing in** to **Yoruba** (or Pidgin), sign again, and show the translation appear with the English underneath. Ask a native speaker to check it before recording.
 4. **How Meta's AI does it (1:40–2:15)**, with on-screen labels:
    - **Muse Voice Transcribe** turns speech into text.
-   - **Muse Spark** shortens speech to the words worth signing, and fixes unclear letters using the conversation ("H-E-L-O" becomes "HELLO").
+   - **Muse Spark** shortens speech to the words worth signing, and fixes unclear letters using the conversation ("H-E-L-O" becomes "HELLO"), and translates signed messages into Yoruba, Hausa, Igbo, Pidgin or French.
    - **SAM 3.1** outlines the hand to tell look-alike letters apart.
    - Hands are tracked on the device, so video never touches our server.
 5. **Impact (2:15–2:35).** "Built with Nigerian signers for Nigerian Sign Language and ASL. Works on any phone browser. Next: word signs, more Nigerian data, smart glasses."

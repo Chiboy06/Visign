@@ -28,7 +28,7 @@ const outputText = (r: ResponsesOutput) =>
     .join("");
 
 /** Muse Spark 1.3, Standard mode (prompts are not used for training). */
-export async function spark(instructions: string, text: string) {
+export async function spark(instructions: string, text: string, deadlineMs = SPARK_DEADLINE_MS) {
   const res = await post(
     "/responses",
     JSON.stringify({
@@ -39,7 +39,7 @@ export async function spark(instructions: string, text: string) {
       store: false,
     }),
     { "Content-Type": "application/json" },
-    SPARK_DEADLINE_MS,
+    deadlineMs,
   );
   return outputText(await res.json()).trim();
 }
