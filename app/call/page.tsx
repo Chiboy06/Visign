@@ -50,6 +50,8 @@ export default function CallPage() {
   const [describing, setDescribing] = useState(false);
   // Deaf side: what the tracker sees right now ("" = no hand), shown live so the signer knows it's working.
   const [seen, setSeen] = useState<string | null>(null);
+  // Before the first tracked frame: which step the tracker is waiting on, or the error that stopped it.
+  const [stage, setStage] = useState("Loading hand tracker…");
   const overlay = useRef<HTMLCanvasElement>(null);
   // Hearing side: the language signed messages are read and spoken in.
   const [lang, setLang] = useState<LanguageCode>("en");
@@ -225,12 +227,17 @@ export default function CallPage() {
     if (!joined || role !== "deaf") return;
     let frame = 0, stopped = false;
     const push = createSpeller();
-    let shown: string | null = null;
+    let shown: string | null = null, errors = 0, said = "";
+    // Report the step we're stuck on (shown until the first frame is tracked), once per change.
+    const wait = (msg: string) => msg !== said && setStage((said = msg));
     handLandmarker("VIDEO").then((detector) => {
       const tick = () => {
         if (stopped) return;
         const v = local.current;
-        if (v && v.readyState >= 2 && v.videoWidth && model.current) try {
+        if (!model.current) wait("Loading the letter model…");
+        else if (!v?.srcObject) wait("Waiting for your camera…");
+        else if (v.readyState < 2 || !v.videoWidth) wait("Camera starting…");
+        else try {
           const t = performance.now();
           const points = toPoints(detector.detectForVideo(v, t).landmarks[0]);
           const top = points ? classify(model.current, features(points, v.videoWidth / v.videoHeight)) : null;
@@ -250,16 +257,21 @@ export default function CallPage() {
             addWord(ev.word);
           }
           if (ev.sentenceEnd) sendSentence();
+          errors = 0;
         } catch (e) {
-          console.error(e); // one bad frame must not stop recognition for the rest of the call
+          // One bad frame must not stop recognition; a run of them is a real problem worth showing.
+          console.error(e);
+          if (++errors === 30) wait(`Hand tracking error: ${(e as Error).message}. Reload, or try Chrome.`);
         }
-        frame = requestAnimationFrame(tick);
+        // Background tabs pause animation frames; a timer keeps reading signs (slower) when this tab is hidden.
+        frame = document.hidden ? window.setTimeout(tick, 100) : requestAnimationFrame(tick);
       };
       tick();
-    }).catch(() => setStatus("Hand tracking could not start on this device. Reload, or try Chrome."));
+    }).catch((e) => wait(`Hand tracking could not start: ${(e as Error).message}. Reload, or try Chrome.`));
     return () => {
-      stopped = true;
+      stopped = true; // tick checks this, so whichever of the two timers is pending does nothing
       cancelAnimationFrame(frame);
+      clearTimeout(frame);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the loop must not restart on every render
   }, [joined, role]);
@@ -419,6 +431,7 @@ export default function CallPage() {
     setCamOn(true);
     setRemotes([]);
     setSeen(null);
+    setStage("Loading hand tracker…");
     setJoined(false);
     setStatus("You left the call.");
   }
@@ -607,7 +620,7 @@ export default function CallPage() {
               <p className="flex items-center gap-2 text-sm" aria-label="Hand tracker">
                 <span className={`h-2.5 w-2.5 rounded-full ${seen ? "bg-green-400" : seen === "" ? "bg-cloth/40" : "animate-pulse bg-sun"}`} aria-hidden="true" />
                 {seen === null
-                  ? camOn ? "Starting hand tracking…" : "Camera off: turn it on to sign."
+                  ? camOn ? stage : "Camera off: turn it on to sign."
                   : seen ? (
                     <>
                       Hand seen. Reading <b className="font-display text-base text-sun">{seen.split(" ")[0]}</b>
