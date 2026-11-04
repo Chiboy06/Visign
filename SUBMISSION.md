@@ -28,6 +28,7 @@ Speech-to-text helps a deaf person read what is said, but when they sign back, n
 - **Call:** LiveKit carries video, with a data channel for messages. A room holds several people; each message shows who sent it.
 - **Server:** Next.js route handlers on Vercel. The Meta key never reaches the browser.
 - **Budget:** every paid AI call reserves spend first in a locked Postgres function (Supabase). It stops at $75, half our credits.
+- **Meetings:** start now, join with a code, or schedule a call with a Google Calendar or .ics invite.
 - **Fallbacks:** if Meta is slow or down, the app shows the words as spelled or spoken instead of freezing. Typing works both ways.
 
 ## Data (all licensed for this use, credited in the repo)

@@ -226,3 +226,14 @@ test("describeSpelled keeps signing order and alternatives", () => {
     ["1: H 90% | I 70%, J 20%", "2: U 100%"].join("\n"),
   );
 });
+
+test("calendar invites carry the link, UTC times and escaped text", async () => {
+  const { googleCalendarUrl, icsFile } = await import("./invite.ts");
+  const i = { title: "Clinic, intake; room 2", start: new Date("2026-11-05T09:30:00Z"), minutes: 30, link: "https://x.test/call?room=abc123" };
+  const ics = icsFile(i, "abc123");
+  assert.match(ics, /DTSTART:20261105T093000Z\r\nDTEND:20261105T100000Z/);
+  assert.ok(ics.includes("SUMMARY:Clinic\\, intake\\; room 2"));
+  const g = new URL(googleCalendarUrl(i));
+  assert.equal(g.searchParams.get("dates"), "20261105T093000Z/20261105T100000Z");
+  assert.match(g.searchParams.get("details")!, /room=abc123/);
+});

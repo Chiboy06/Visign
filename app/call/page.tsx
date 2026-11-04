@@ -12,6 +12,7 @@ import { encodeWav, resample } from "@/lib/wavEncode";
 import { isLanguage, LANGUAGES, type LanguageCode } from "@/lib/languages";
 import { Avatar } from "./Avatar";
 import { LanguagePicker } from "./LanguagePicker";
+import { Schedule } from "./Schedule";
 
 type Role = "hearing" | "deaf";
 // `translation`: what the reader sees (English for the deaf side, the chosen language for the hearing side).
@@ -358,12 +359,15 @@ export default function CallPage() {
     return (
       <main className="flex flex-1 flex-col">
         <header className="adire px-5 py-10 text-cloth sm:px-8">
-          <div className="mx-auto max-w-xl">
+          <div className="mx-auto max-w-6xl">
             <Link href="/" className="font-display text-xl font-bold">Visign</Link>
-            <h1 className="mt-6 font-display text-4xl font-extrabold tracking-tight sm:text-5xl">Join a call</h1>
+            <h1 className="mt-6 font-display text-4xl font-extrabold tracking-tight sm:text-5xl">Meetings for speaking and signing</h1>
+            <p className="mt-3 max-w-2xl text-lg text-cloth/80">Start a call now, join with a code, or schedule one and send the invite.</p>
           </div>
         </header>
-        <div className="mx-auto w-full max-w-xl px-5 py-8 sm:px-8">
+        <div className="mx-auto grid w-full max-w-6xl items-start gap-8 px-5 py-8 sm:px-8 lg:grid-cols-[minmax(0,1fr)_26rem]">
+          <div>
+          <h2 className="mb-5 font-display text-2xl font-bold">Start or join now</h2>
           <fieldset>
             <legend className="font-display text-xl font-bold">How will you talk?</legend>
             <div className="mt-4 grid grid-cols-2 gap-3">
@@ -396,10 +400,16 @@ export default function CallPage() {
           />
 
           <label className="mt-6 block font-display text-xl font-bold" htmlFor="room">Room code</label>
-          <input
-            id="room" className="mt-2 w-full rounded-2xl border-2 border-ink/15 bg-white px-4 py-3 text-xl tracking-wider"
-            value={roomCode} onChange={(e) => setRoomCode(e.target.value.toLowerCase())} autoComplete="off" spellCheck={false}
-          />
+          <div className="mt-2 flex gap-2">
+            <input
+              id="room" className="min-w-0 flex-1 rounded-2xl border-2 border-ink/15 bg-white px-4 py-3 text-xl tracking-wider"
+              value={roomCode} onChange={(e) => setRoomCode(e.target.value.toLowerCase())} autoComplete="off" spellCheck={false}
+            />
+            <button type="button" className="rounded-2xl border-2 border-ink/15 bg-white px-4 font-bold" onClick={() => setRoomCode(newRoomCode())}>
+              New code
+            </button>
+          </div>
+          <p className="mt-1 text-sm text-ink/60">Got an invite? Its code is already filled in. Otherwise paste the code you were sent.</p>
 
           <button className="mt-6 w-full rounded-full bg-ink py-4 font-display text-lg font-bold text-cloth hover:bg-dye disabled:opacity-60" onClick={join} disabled={connecting}>
             {connecting ? "Joining…" : "Join call"}
@@ -422,9 +432,11 @@ export default function CallPage() {
           <p className="mt-4 min-h-6 text-sm" role="status">{status}</p>
           <p className="mt-6 text-sm leading-relaxed text-ink/70">
             By joining, you agree that your speech clips are sent to Meta&apos;s AI to be transcribed, and spelled words
-            to Meta&apos;s AI to be decoded. Video travels between the two of you through LiveKit and is never recorded.
+            to Meta&apos;s AI to be decoded. Video travels between participants through LiveKit and is never recorded.
             Hand tracking runs on your device.
           </p>
+          </div>
+          <Schedule />
         </div>
       </main>
     );
