@@ -12,7 +12,7 @@ Copy-paste text for the Cerebral Valley form, plus the demo script. Fill in the 
 
 ## Form answers (in form order)
 
-**Problem statement:** Build for the World.
+**Problem statement:** Build for Your World.
 
 **Most Viral track X post:** leave empty (not competing).
 
@@ -27,7 +27,7 @@ Copy-paste text for the Cerebral Valley form, plus the demo script. Fill in the 
 **Why are Meta's models important to your solution?**
 Fingerspelling recognition alone gives noisy letters: look-alike handshapes, dropped doubles, no grammar. Muse Spark turns those letters, with the classifier's alternatives and the conversation so far, into the sentence the signer meant, in the listener's language. It also turns Nigerian Pidgin into plain English for deaf readers, who often learn signed and written English rather than Pidgin. Muse Voice Transcribe gives the hearing side a hands-free way in, and Muse Spark vision describes the scene for blind users. Without these models, Visign would be a letter display; with them, it is a conversation.
 
-**Feedback on partner technologies:** None used. (LiveKit, Supabase and Vercel are infrastructure we chose ourselves; only mention them if they are on the partner list.)
+**Feedback on partner technologies:** None used. The partners (Baseten, Modal, Fireworks) host Meta's open-weight models; we called the hosted Meta Model API directly.
 
 **How likely are you to build with the Meta Model API?** Very likely.
 
