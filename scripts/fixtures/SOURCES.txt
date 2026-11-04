@@ -1,2 +1,1 @@
-hand.jpg: "ISS-42 Samantha Cristoforetti Leonard Nimoy tribute", NASA, public domain, via Wikimedia Commons (960px thumbnail).
-hand-crop.jpg: crop of the raised hand from hand.jpg (188x224, JPEG q80).
+hand-crop.jpg: the raised hand cropped from "ISS-42 Samantha Cristoforetti Leonard Nimoy tribute" (NASA, public domain, via Wikimedia Commons), 188x224, JPEG q80. Used only by scripts/latency.ts to time SAM 3.1. It is not sign language.

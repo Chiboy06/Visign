@@ -142,7 +142,6 @@ All routes accept and return JSON (except `transcribe`, which takes a WAV body).
 |---|---|---|
 | `POST /api/gloss` | `{ text, context? }` | `{ english, gloss: ["YOU","WANT","WATER","?"] }` |
 | `POST /api/translate` | `{ text, to, spelled?, context? }` (`to`: en, yo, ha, ig, pcm, fr) | `{ text }`: one natural sentence |
-| `POST /api/segment` | `{ image: "data:image/jpeg;base64,…" }`, a hand crop ≤ 45 KB | `{ sam }` (raw SAM 3.1 output; not used by the call yet) |
 | `POST /api/transcribe` | mono 16-bit WAV, 16 or 24 kHz, ≤ 2 MB | `{ text }` |
 | `POST /api/token` | `{ room, role: "hearing" \| "deaf" }` | `{ token, url }` (LiveKit, 1 hour) |
 | `GET /api/health` | — | `{ ok: true }` |
