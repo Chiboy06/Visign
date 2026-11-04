@@ -6,8 +6,8 @@ import { spark } from "@/lib/meta";
 const INSTRUCTIONS = `You convert spoken English into Nigerian Sign Language gloss for a fingerspelling avatar.
 Fingerspelling is slow, so keep only the words that carry meaning.
 Rules: drop fillers (um, like, you know), articles, and forms of "to be". Keep question words, negation, names and numbers.
-Use sign-language order: topic first, question word last. At most 8 tokens.
-Output ONLY a JSON array of uppercase tokens, e.g. ["WATER","YOU","WANT","?"]. Use "?" as its own token for questions.`;
+Keep the speaker's word order exactly: the avatar fingerspells English words, so reordering reads as backwards. At most 8 tokens.
+Output ONLY a JSON array of uppercase tokens, e.g. "Do you want water?" -> ["YOU","WANT","WATER","?"]. Use "?" as its own token for questions.`;
 
 export async function POST(req: Request) {
   const body = await jsonBody(req, 8_000);

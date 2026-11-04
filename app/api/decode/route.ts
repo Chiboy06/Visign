@@ -1,5 +1,6 @@
 import { COST, reserve } from "@/lib/budget";
 import { bad, jsonBody } from "@/lib/http";
+import { reordersLetters } from "@/lib/gloss";
 import { spark } from "@/lib/meta";
 
 const INSTRUCTIONS = `You decode noisy fingerspelling into words during a live conversation.
@@ -31,7 +32,8 @@ export async function POST(req: Request) {
       .map((pos, i) => `${i + 1}: ${pos.map((g) => `${g.letter} ${Math.round(g.p * 100)}%`).join(", ")}`)
       .join("\n");
     const text = await spark(INSTRUCTIONS, `Recent conversation:\n${context.join("\n") || "(none)"}\n\nLetters:\n${positions}`);
-    return Response.json({ text: text || raw });
+    // Never show letters in an order the person didn't sign (the model sometimes "fixes" IH into HI).
+    return Response.json({ text: text && !reordersLetters(raw, text) ? text : raw });
   } catch (e) {
     console.error(e);
     return Response.json({ text: raw, degraded: true });

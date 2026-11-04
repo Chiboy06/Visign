@@ -7,6 +7,12 @@ export function localGloss(text: string): string[] {
   return [...words.slice(0, text.trim().endsWith("?") ? 7 : 8), ...(text.trim().endsWith("?") ? ["?"] : [])];
 }
 
+/** True when `text` uses exactly the signed letters but in a different order: a rearrangement, not a fix. */
+export function reordersLetters(signed: string, text: string): boolean {
+  const a = signed.toUpperCase().replace(/[^A-Z0-9]/g, ""), b = text.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  return a !== b && a.length === b.length && [...a].sort().join("") === [...b].sort().join("");
+}
+
 // The model is told to return a JSON array; fall back to the local gloss so the avatar always gets something.
 export function parseGloss(raw: string, original: string): string[] {
   try {

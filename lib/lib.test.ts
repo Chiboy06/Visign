@@ -6,7 +6,7 @@ import { classify, features } from "./classify.ts";
 import { countByLabel, labelFromPath, sourceKey, toPoints } from "./dataset.ts";
 import { createSpeller, GAP_MS, HOLD_MS } from "./speller.ts";
 import { encodeWav, resample } from "./wavEncode.ts";
-import { localGloss, parseGloss } from "./gloss.ts";
+import { localGloss, parseGloss, reordersLetters } from "./gloss.ts";
 import { wavInfo } from "./wav.ts";
 
 test("SAM stops at the cheap-mode cap, everything else at the hard cap", () => {
@@ -178,4 +178,12 @@ test("speller: lowering the hand allows the same letter again (double letters)",
   push(HOLD_MS + 50, null); // hand down briefly, shorter than the word gap
   push(HOLD_MS + 100, g);
   assert.equal(push(2 * HOLD_MS + 100, g).letter?.[0].letter, "L");
+});
+
+test("reordersLetters catches rearranged letters but allows real fixes", () => {
+  assert.equal(reordersLetters("IH", "HI"), true); // signed I-H: showing HI would reverse the person
+  assert.equal(reordersLetters("HI", "HI"), false);
+  assert.equal(reordersLetters("HELO", "HELLO"), false); // restored double letter: allowed
+  assert.equal(reordersLetters("WOLD", "WOLF"), false); // one-letter swap: allowed
+  assert.equal(reordersLetters("CTA", "cat"), true);
 });
