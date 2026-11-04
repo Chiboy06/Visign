@@ -14,7 +14,7 @@ Copy-paste text for the Cerebral Valley form, plus the demo script. Fill in the 
 A live two-way video call between a hearing and a deaf person: speech becomes captions and a fingerspelling avatar, and fingerspelling becomes a natural sentence, read aloud in the listener's language.
 
 ## Short description (about 100 words)
-Speech-to-text helps a deaf person read what is said, but when they sign back, nobody understands. Visign translates both ways in one call that runs in any browser. The hearing person holds a button and talks, in English or Nigerian Pidgin. The deaf person reads plain English and watches a cartoon signer fingerspell it. The deaf person fingerspells to their camera. Their letters become one natural sentence that the hearing person reads and hears, in English, Yorùbá, Hausa, Igbo, Pidgin or French. Hands are tracked on the device, video travels over LiveKit (never our server), several people can share a room, and it's built with Nigerian Sign Language data.
+Speech-to-text helps a deaf person read what is said, but when they sign back, nobody understands. Visign translates both ways in one call that runs in any browser. The hearing person holds a button and talks, in English or Nigerian Pidgin. The deaf person reads plain English and watches a cartoon signer fingerspell it. The deaf person fingerspells to their camera. Their letters become one natural sentence that the hearing person reads and hears, in English, Yorùbá, Hausa, Igbo, Pidgin, French, Spanish, Arabic, Chinese or Korean. Hands are tracked on the device, video travels over LiveKit (never our server), several people can share a room, and it's built with Nigerian Sign Language data.
 
 ## How we used Meta's AI
 - **Muse Voice Transcribe** turns the hearing person's speech into text, one utterance at a time.
@@ -47,7 +47,7 @@ Speech-to-text helps a deaf person read what is said, but when they sign back, n
 ## Honest limits
 - Visign understands **fingerspelling**, not full signs (WATER or THANK-YOU as real signs, facial grammar). No openly licensed NSL dataset of signs or sentences exists.
 - Speech input is English or Pidgin. Meta's transcription doesn't support Yorùbá, Hausa or Igbo yet; translation applies to what the listener reads and hears.
-- Read-aloud uses the device's voices. Most devices have English and French, but rarely Yorùbá, Hausa or Igbo (then text only).
+- Read-aloud uses the device's voices. Most devices have English, French, Spanish, Arabic, Chinese and Korean voices, but rarely Yorùbá, Hausa or Igbo (then text only).
 - From Lagos, each AI step takes a few seconds, mostly network time.
 
 ## What's next

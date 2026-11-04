@@ -567,7 +567,7 @@ export default function CallPage() {
                 <li key={i} className={`max-w-[88%] ${m.from === "me" ? "self-end text-right" : "self-start"}`}>
                   <span className="text-xs text-cloth/60">{m.from === "me" ? "You" : m.who ?? "They"} {m.kind === "speech" ? "spoke" : "signed"}</span>
                   <p className={`mt-0.5 rounded-3xl px-4 py-2 text-left text-lg ${m.kind === "speech" ? "bg-vat text-cloth" : "bg-sun text-ink"}`}>
-                    {m.translation ?? m.text}
+                    <span dir="auto" className="block">{m.translation ?? m.text}</span>
                     {m.translation && <span className="mt-1 block text-sm opacity-70">{m.text}</span>}
                   </p>
                 </li>

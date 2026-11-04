@@ -31,7 +31,7 @@ export function LanguagePicker({
               className={`cursor-pointer rounded-2xl border-2 px-4 py-2 transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-sun ${on ? "border-sun bg-sun text-ink" : "border-ink/10 bg-cloth hover:border-ink/30"}`}
             >
               <input type="radio" name="language" className="sr-only" checked={on} onChange={() => onLang(code)} />
-              <span className="block font-display text-lg font-bold leading-tight" lang={code === "pcm" ? "pcm" : code}>{l.native}</span>
+              <span className="block font-display text-lg font-bold leading-tight" lang={code} dir="auto">{l.native}</span>
               {l.native !== l.name && <span className="block text-xs text-ink/60">{l.name}</span>}
             </label>
           );

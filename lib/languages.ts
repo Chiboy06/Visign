@@ -7,6 +7,10 @@ export const LANGUAGES = {
   ig: { name: "Igbo", native: "Asụsụ Igbo", voice: "ig" },
   pcm: { name: "Nigerian Pidgin", native: "Naijá", voice: "en" }, // no Pidgin voices exist; an English voice reads it well
   fr: { name: "French", native: "Français", voice: "fr" },
+  es: { name: "Spanish", native: "Español", voice: "es" },
+  ar: { name: "Arabic", native: "العربية", voice: "ar" },
+  zh: { name: "Simplified Chinese", native: "中文", voice: "zh" },
+  ko: { name: "Korean", native: "한국어", voice: "ko" },
 } as const;
 
 export type LanguageCode = keyof typeof LANGUAGES;

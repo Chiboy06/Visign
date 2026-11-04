@@ -22,12 +22,12 @@ const audiences = [
 
 const meta = [
   { h: "Muse Voice Transcribe", p: "Turns the hearing person’s speech into text, one utterance at a time." },
-  { h: "Muse Spark", p: "Turns Pidgin into plain English, and spelled letters plus the conversation into one sentence in Yorùbá, Hausa, Igbo, Pidgin, French or English." },
+  { h: "Muse Spark", p: "Turns Pidgin into plain English, and spelled letters plus the conversation into one sentence in ten languages: English, Yorùbá, Hausa, Igbo, Pidgin, French, Spanish, Arabic, Chinese or Korean." },
   { h: "SAM 3.1", p: "Tested for hand outlines; the next step for telling look-alike fist letters apart." },
 ];
 
 const roadmap = [
-  { when: "Now", items: ["Two-way live calls, several people per room", "NSL and ASL fingerspelling", "Six reading languages, read aloud"] },
+  { when: "Now", items: ["Two-way live calls, several people per room", "NSL and ASL fingerspelling", "Ten reading languages, read aloud"] },
   { when: "Next", items: ["Accounts and team workspaces for organisations", "Word signs (HELLO, THANK YOU) from motion data", "Saved transcripts, with consent"] },
   { when: "Later", items: ["Captions in smart glasses", "Signing avatar in VR meeting rooms", "Native mobile apps"] },
 ];
