@@ -49,3 +49,4 @@ next-env.d.ts
 
 # raw datasets (large; fetched by scripts)
 /data/raw
+.claude/

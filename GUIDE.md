@@ -206,7 +206,7 @@ From the Official Rules (re-read Nov 1; unchanged since applications):
 - [ ] **Data licenses respected and credited** (in the README): NSL dataset (CC BY 4.0) and ASLNow! (MIT). **Don't add datasets marked "NC" / non-commercial** (e.g. How2Sign): the rules give Meta a license to use the project for any purpose.
 - [ ] **Privacy:** the call screen tells users what goes to Meta's AI; recordings need consent and store initials only.
 - [ ] **Uses Meta's models:** Muse Spark and Muse Voice Transcribe in the live call; SAM 3.1 tested (25% of the score). Don't claim SAM runs live.
-- [ ] **Credits:** used only for this project, under $75 so far. Re-read the **Credit Terms** from your Meta dashboard (Claude couldn't open the expired link).
+- [ ] **Credits:** used only for this project, under $75 so far. Re-read the **Credit Terms** from your Meta dashboard.
 - [ ] **Video:** no secrets on screen, no copyrighted music, everyone shown has agreed.
 - [ ] **Code of conduct:** respectful in Discord and all event spaces.
 
