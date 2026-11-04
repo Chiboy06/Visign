@@ -27,6 +27,7 @@ export default function CallPage() {
   const [roomCode, setRoomCode] = useState("");
   const [joined, setJoined] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  const [camOn, setCamOn] = useState(true);
   const [status, setStatus] = useState("");
   const [messages, setMessages] = useState<Msg[]>([]);
   const [letters, setLetters] = useState<Guess[][]>([]);
@@ -140,6 +141,7 @@ export default function CallPage() {
       } catch {
         // Often another tab holds the camera. Stay in the call: reading and typing still work.
         note = " Camera unavailable: close other tabs using it and rejoin to show video.";
+        setCamOn(false);
       }
       window.history.replaceState(null, "", `/call?room=${roomCode}&role=${role}`);
       setJoined(true);
@@ -309,6 +311,31 @@ export default function CallPage() {
     else send({ kind: "sign", text });
   }
 
+  async function toggleCam() {
+    const r = room.current;
+    if (!r) return;
+    try {
+      await r.localParticipant.setCameraEnabled(!camOn);
+      if (!camOn) r.localParticipant.getTrackPublication(Track.Source.Camera)?.videoTrack?.attach(local.current!);
+      setCamOn(!camOn);
+    } catch {
+      setStatus("Camera unavailable: close other apps using it.");
+    }
+  }
+
+  // Leave cleanly: disconnect (releases camera and room) and go back to the join screen.
+  async function leave() {
+    await room.current?.disconnect();
+    room.current = null;
+    words.current = [];
+    setSentence([]);
+    setLetters([]);
+    setMessages([]);
+    setCamOn(true);
+    setJoined(false);
+    setStatus("You left the call.");
+  }
+
   // roomCode is only set after mount, so the server and the first client render both show no link (no hydration mismatch).
   const shareLink = roomCode ? `${location.origin}/call?room=${roomCode}&role=${role === "hearing" ? "deaf" : "hearing"}` : "";
 
@@ -381,96 +408,135 @@ export default function CallPage() {
   }
 
   return (
-    <main className="flex flex-1 flex-col">
-      <header className="adire text-cloth">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-          <Link href="/" className="font-display text-xl font-bold">Visign</Link>
-          <p className="truncate text-sm text-cloth/80" role="status">{status || `Room ${roomCode}`}</p>
+    <main className="flex flex-1 flex-col bg-ink text-cloth">
+      <header className="border-b border-white/10">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          <div className="flex items-center gap-3">
+            <Link href="/" className="font-display text-xl font-bold">Visign</Link>
+            <span className="rounded-full bg-white/10 px-3 py-1 text-sm">Room {roomCode}</span>
+            <button
+              className="rounded-full border border-white/20 px-3 py-1 text-sm hover:bg-white/10"
+              onClick={() => navigator.clipboard.writeText(shareLink).then(() => setStatus("Invite link copied."), () => setStatus("Copy failed."))}
+            >
+              Copy invite link
+            </button>
+          </div>
+          <p className="flex items-center gap-2 truncate text-sm text-cloth/80" role="status">
+            <span className="h-2 w-2 rounded-full bg-sun" aria-hidden="true" />
+            {status || "In call"}
+          </p>
         </div>
       </header>
 
-      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-5 px-4 py-5 sm:px-6">
-        <div className={`grid gap-5 ${role === "deaf" ? "lg:grid-cols-[1.6fr_1fr]" : ""}`}>
-          <div className="relative overflow-hidden rounded-[2rem] bg-dye">
+      <div className="mx-auto grid w-full max-w-7xl flex-1 gap-4 p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_400px]">
+        <div className="flex min-w-0 flex-col gap-4">
+          {/* Stage: the other person, your own tile, and the call controls floating over the video */}
+          <div className="relative overflow-hidden rounded-[1.75rem] bg-dye ring-1 ring-white/10">
             <video ref={remote} autoPlay playsInline className="aspect-video w-full object-cover" aria-label="The other person's video" />
-            <video ref={local} autoPlay playsInline muted className="absolute bottom-3 right-3 w-1/4 min-w-24 -scale-x-100 rounded-2xl border-4 border-cloth" aria-label="Your camera" />
-          </div>
-          {role === "deaf" && <Avatar poses={poses} gloss={gloss} />}
-        </div>
-
-        {role === "deaf" && (
-          <section aria-label="Your sentence" className="flex flex-wrap items-center gap-2 rounded-[2rem] bg-white p-3">
-            {sentence.length ? (
-              sentence.map((w, i) => (
-                <span key={i} className="rounded-full bg-sun/25 px-4 py-1.5 font-display text-xl font-bold">{w}</span>
-              ))
-            ) : (
-              <p className="px-2 text-ink/60">Words you spell gather here. Pause for 2.5 seconds to send them as one sentence.</p>
-            )}
-            <span className="ml-auto flex gap-2">
-              <button className="rounded-full border-2 border-ink/15 px-4 py-2 font-bold disabled:opacity-40" onClick={clearSentence} disabled={!sentence.length && !letters.length}>
-                Clear
-              </button>
-              <button className="rounded-full bg-ink px-5 py-2 font-display font-bold text-cloth disabled:opacity-40" onClick={sendSentence} disabled={!sentence.length}>
-                Send now
-              </button>
+            <span className="absolute left-4 top-4 rounded-full bg-ink/70 px-3 py-1 text-sm backdrop-blur">
+              {role === "hearing" ? "Deaf signer" : "Hearing speaker"}
             </span>
-          </section>
-        )}
+            <div className="absolute right-4 top-4 w-1/4 min-w-24 overflow-hidden rounded-2xl ring-2 ring-cloth/80">
+              <video ref={local} autoPlay playsInline muted className="aspect-video w-full -scale-x-100 bg-ink object-cover" aria-label="Your camera" />
+              <span className="absolute bottom-1 left-2 text-xs font-bold drop-shadow">{camOn ? "You" : "Camera off"}</span>
+            </div>
 
-        {role === "deaf" && (
-          <section aria-label="Letters you are signing" aria-live="polite" className="flex min-h-20 flex-wrap items-center gap-2">
-            {letters.length ? (
-              letters.map((pos, i) => (
-                <span key={i} className="grid h-16 w-14 place-items-center rounded-2xl bg-sun font-display text-4xl font-bold text-ink">
-                  {pos[0].letter}
+            <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-3 rounded-full bg-ink/75 px-3 py-2 backdrop-blur">
+              {role === "hearing" && (
+                <button
+                  aria-pressed={talking}
+                  className={`relative flex h-14 items-center gap-2 rounded-full px-5 font-display font-bold ${talking ? "bg-sun text-ink" : "bg-vat text-cloth"}`}
+                  onPointerDown={startTalk} onPointerUp={stopTalk} onPointerLeave={() => talking && stopTalk()}
+                  onKeyDown={(e) => e.key === " " && !e.repeat && startTalk()} onKeyUp={(e) => e.key === " " && stopTalk()}
+                >
+                  {talking && <span className="absolute inset-0 animate-ping rounded-full bg-sun/50" aria-hidden="true" />}
+                  <svg aria-hidden="true" viewBox="0 0 24 24" className="relative h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+                  </svg>
+                  <span className="relative whitespace-nowrap">{talking ? "Release to send" : "Hold to speak"}</span>
+                </button>
+              )}
+              <button
+                aria-pressed={!camOn} aria-label={camOn ? "Turn camera off" : "Turn camera on"} onClick={toggleCam}
+                className={`grid h-12 w-12 place-items-center rounded-full ${camOn ? "bg-white/15 hover:bg-white/25" : "bg-cloth text-ink"}`}
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="6" width="13" height="12" rx="2" /><path d="m16 10 5-3v10l-5-3" />
+                  {!camOn && <path d="M3 3l18 18" />}
+                </svg>
+              </button>
+              <button aria-label="Leave call" onClick={leave} className="grid h-12 w-12 place-items-center rounded-full bg-red-600 hover:bg-red-700">
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 rotate-[135deg]" fill="currentColor">
+                  <path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {role === "deaf" && (
+            <section className="flex flex-col gap-3 rounded-[1.75rem] bg-dye/70 p-4 ring-1 ring-white/10">
+              <div aria-label="Letters you are signing" aria-live="polite" className="flex min-h-16 flex-wrap items-center gap-2">
+                {letters.length ? (
+                  letters.map((pos, i) => (
+                    <span key={i} className="grid h-16 w-14 place-items-center rounded-2xl bg-sun font-display text-4xl font-bold text-ink">
+                      {pos[0].letter}
+                    </span>
+                  ))
+                ) : (
+                  <p className="text-cloth/70">Sign a letter and hold it still. Lower your hand briefly to finish a word.</p>
+                )}
+              </div>
+              <div aria-label="Your sentence" className="flex flex-wrap items-center gap-2 border-t border-white/10 pt-3">
+                {sentence.length ? (
+                  sentence.map((w, i) => (
+                    <span key={i} className="rounded-full bg-sun/20 px-4 py-1.5 font-display text-xl font-bold text-sun">{w}</span>
+                  ))
+                ) : (
+                  <p className="text-sm text-cloth/60">Words gather here. Pause for 2.5 seconds to send them as one sentence.</p>
+                )}
+                <span className="ml-auto flex gap-2">
+                  <button className="rounded-full border border-white/20 px-4 py-2 font-bold disabled:opacity-40" onClick={clearSentence} disabled={!sentence.length && !letters.length}>
+                    Clear
+                  </button>
+                  <button className="rounded-full bg-sun px-5 py-2 font-display font-bold text-ink disabled:opacity-40" onClick={sendSentence} disabled={!sentence.length}>
+                    Send now
+                  </button>
                 </span>
-              ))
-            ) : (
-              <p className="text-lg text-ink/60">Sign a letter and hold it still. Lower your hand briefly to finish a word.</p>
-            )}
-          </section>
-        )}
-
-        <ol className="flex max-h-80 flex-col gap-2 overflow-auto rounded-[2rem] bg-white p-4" role="log" aria-live="polite" aria-label="Conversation">
-          {messages.length === 0 && (
-            <li className="py-6 text-center text-ink/60">
-              {role === "hearing" ? "Hold the button and speak, or type below." : "Their words will appear here and on the signer."}
-            </li>
+              </div>
+            </section>
           )}
-          {messages.map((m, i) => (
-            <li key={i} className={`max-w-[85%] ${m.from === "me" ? "self-end text-right" : "self-start"}`}>
-              <span className="text-xs text-ink/60">{m.from === "me" ? "You" : "They"} {m.kind === "speech" ? "spoke" : "signed"}</span>
-              <p className={`mt-0.5 rounded-3xl px-4 py-2 text-lg ${m.kind === "speech" ? "bg-vat text-cloth" : "bg-sun text-ink"}`}>
-                {m.translation ?? m.text}
-                {m.translation && <span className="mt-1 block text-sm opacity-70">{m.text}</span>}
-              </p>
-            </li>
-          ))}
-        </ol>
-
-        {role === "hearing" && <LanguagePicker lang={lang} onLang={pickLang} speak={speakOut} onSpeak={pickSpeak} />}
-
-        <div className="flex items-center gap-3">
-          {role === "hearing" && (
-            <button
-              aria-pressed={talking}
-              className={`relative grid h-20 w-20 shrink-0 place-items-center rounded-full font-display text-sm font-bold leading-tight ${talking ? "bg-sun text-ink" : "bg-vat text-cloth"}`}
-              onPointerDown={startTalk} onPointerUp={stopTalk} onPointerLeave={() => talking && stopTalk()}
-              onKeyDown={(e) => e.key === " " && !e.repeat && startTalk()} onKeyUp={(e) => e.key === " " && stopTalk()}
-            >
-              {talking && <span className="absolute inset-0 animate-ping rounded-full bg-sun/60" aria-hidden="true" />}
-              <span className="relative">{talking ? "Release to send" : "Hold to speak"}</span>
-            </button>
-          )}
-          <form onSubmit={submitTyped} className="flex min-w-0 flex-1 gap-2">
-            <input
-              className="min-w-0 flex-1 rounded-full border-2 border-ink/15 bg-white px-5 py-3 text-lg"
-              placeholder="Type a message" value={typed} onChange={(e) => setTyped(e.target.value)} aria-label="Type a message"
-            />
-            <button className="rounded-full bg-ink px-6 font-display font-bold text-cloth hover:bg-dye">Send</button>
-          </form>
         </div>
+
+        <aside className="flex min-h-0 flex-col gap-4">
+          {role === "deaf" ? <Avatar poses={poses} gloss={gloss} /> : <LanguagePicker lang={lang} onLang={pickLang} speak={speakOut} onSpeak={pickSpeak} />}
+
+          <section className="flex min-h-80 flex-1 flex-col rounded-[1.75rem] bg-dye/70 ring-1 ring-white/10">
+            <h2 className="px-5 pt-4 font-display text-lg font-bold">Conversation</h2>
+            <ol className="flex max-h-[28rem] flex-1 flex-col gap-3 overflow-auto px-4 py-3" role="log" aria-live="polite" aria-label="Conversation">
+              {messages.length === 0 && (
+                <li className="py-6 text-center text-cloth/60">
+                  {role === "hearing" ? "Hold the button and speak, or type below." : "Their words will appear here and on the signer."}
+                </li>
+              )}
+              {messages.map((m, i) => (
+                <li key={i} className={`max-w-[88%] ${m.from === "me" ? "self-end text-right" : "self-start"}`}>
+                  <span className="text-xs text-cloth/60">{m.from === "me" ? "You" : "They"} {m.kind === "speech" ? "spoke" : "signed"}</span>
+                  <p className={`mt-0.5 rounded-3xl px-4 py-2 text-left text-lg ${m.kind === "speech" ? "bg-vat text-cloth" : "bg-sun text-ink"}`}>
+                    {m.translation ?? m.text}
+                    {m.translation && <span className="mt-1 block text-sm opacity-70">{m.text}</span>}
+                  </p>
+                </li>
+              ))}
+            </ol>
+            <form onSubmit={submitTyped} className="flex gap-2 border-t border-white/10 p-3">
+              <input
+                className="min-w-0 flex-1 rounded-full border border-white/15 bg-ink/60 px-4 py-2.5 text-cloth placeholder:text-cloth/40"
+                placeholder="Type a message" value={typed} onChange={(e) => setTyped(e.target.value)} aria-label="Type a message"
+              />
+              <button className="rounded-full bg-sun px-5 font-display font-bold text-ink">Send</button>
+            </form>
+          </section>
+        </aside>
       </div>
     </main>
   );

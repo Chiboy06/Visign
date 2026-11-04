@@ -7,7 +7,7 @@ export function LanguagePicker({
   lang, onLang, speak, onSpeak,
 }: { lang: LanguageCode; onLang: (l: LanguageCode) => void; speak: boolean; onSpeak: (on: boolean) => void }) {
   return (
-    <fieldset className="rounded-[2rem] bg-white p-4">
+    <fieldset className="rounded-[2rem] bg-white p-4 text-ink">
       <legend className="sr-only">Language for signed messages</legend>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="font-display text-lg font-bold">Their signing reaches you in</p>

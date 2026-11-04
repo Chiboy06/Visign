@@ -51,7 +51,7 @@ export function Avatar({ poses, gloss }: { poses: Record<string, Point[]>; gloss
   }, [poses]);
 
   return (
-    <figure className="flex flex-col items-center rounded-[2rem] bg-white p-4">
+    <figure className="flex flex-col items-center rounded-[2rem] bg-white p-4 text-ink">
       <canvas ref={canvas} width={SIZE} height={SIZE} className="aspect-square w-full max-w-[360px]" aria-hidden="true" />
       <figcaption className="mt-2 flex min-h-16 items-baseline gap-4" aria-live="polite">
         <span className="font-display text-6xl font-bold leading-none text-sun">{now.letter ?? ""}</span>
